@@ -1,5 +1,5 @@
 <template>
-  <div></div>
+  <div ref="canvas"></div>
 </template>
 
 <script>
@@ -8,27 +8,28 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 export default {
   name: "Rhino",
+  props: ["isRhino"],
   data() {
     return {
       scene: {},
       camera: {},
       renderer: {},
-      controls: {},
-      definition: {},
-      grasshopper_file: "grasshopper/worm.gh",
-      doc: {},
+      controls: {}
     };
   },
   beforeMount() {
     this.$RhinoCompute.url = "http://localhost:8081/";
     this.$RhinoCompute.authToken = this.$RhinoCompute.getAuthToken();
-    // // initiate threejs
-    this.init();
-    // // initiate rhino compute
-    this.compute();
+  },
+  mounted() {
+    if (this.$refs.canvas) {
+      this.init();
+      this.compute();
+    }
   },
   methods: {
     init() {
+      var container = this.$refs["canvas"];
       // Rhino models are z-up, so set this as the default
       THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
 
@@ -47,7 +48,7 @@ export default {
       this.renderer = renderer;
       this.renderer.setPixelRatio(window.devicePixelRatio);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(this.renderer.domElement);
+      container.appendChild(this.renderer.domElement);
       // add some controls to orbit the camera
       const controls = new OrbitControls(this.camera, this.renderer.domElement);
       this.controls = controls;
@@ -79,7 +80,7 @@ export default {
       console.log("in compute");
       let sphere = new this.$rhino.Sphere([0, 0, 0], 4);
       this.$RhinoCompute.Mesh.createFromSphere(sphere, 15, 15, false).then(
-        (result) => {
+        result => {
           console.log(result);
           if (result !== undefined) {
             let mesh = this.$rhino.CommonObject.decode(result);
@@ -92,8 +93,8 @@ export default {
           }
         }
       );
-    },
-  },
+    }
+  }
 };
 </script>
 
