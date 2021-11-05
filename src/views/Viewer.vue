@@ -1,7 +1,7 @@
 <template>
   <div class="viewer">
     <h1>This is the viewer page</h1>
-    <button @click="isParametric = !isParametric">
+    <button @click="changeViewer">
       {{ switchTitle }}
     </button>
     <rhino v-if="!isParametric"></rhino>
@@ -35,6 +35,13 @@ export default {
   beforeMount() {
     this.$RhinoCompute.url = "http://localhost:8081/";
     this.$RhinoCompute.authToken = this.$RhinoCompute.getAuthToken();
+    this.$RhinoCompute.apiKey = this.$RhinoCompute.getAuthToken();
+  },
+  methods: {
+    changeViewer() {
+      this.isParametric = !this.isParametric;
+      console.clear();
+    }
   }
 };
 </script>
