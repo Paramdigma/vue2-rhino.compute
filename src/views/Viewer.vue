@@ -6,6 +6,7 @@
     </button>
     <rhino v-if="!isParametric"></rhino>
     <grasshopper v-else></grasshopper>
+    <canvas ref="canvas"></canvas>
   </div>
 </template>
 

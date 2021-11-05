@@ -3,9 +3,6 @@
 </template>
 
 <script>
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-
 export default {
   name: "Rhino",
   props: ["isRhino"],
@@ -14,7 +11,7 @@ export default {
       scene: {},
       camera: {},
       renderer: {},
-      controls: {},
+      controls: {}
     };
   },
   mounted() {
@@ -27,11 +24,11 @@ export default {
     init() {
       var container = this.$refs["canvas"];
       // Rhino models are z-up, so set this as the default
-      THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
+      this.$THREE.Object3D.DefaultUp = new this.$THREE.Vector3(0, 0, 1);
 
-      this.scene = new THREE.Scene();
-      this.scene.background = new THREE.Color(1, 1, 1);
-      this.camera = new THREE.PerspectiveCamera(
+      this.scene = new this.$THREE.Scene();
+      this.scene.background = new this.$THREE.Color(1, 1, 1);
+      this.camera = new this.$THREE.PerspectiveCamera(
         45,
         window.innerWidth / window.innerHeight,
         1,
@@ -40,13 +37,16 @@ export default {
 
       this.camera.position.z = 10;
 
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      const renderer = new this.$THREE.WebGLRenderer({ antialias: true });
       this.renderer = renderer;
       this.renderer.setPixelRatio(window.devicePixelRatio);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(this.renderer.domElement);
       // add some controls to orbit the camera
-      const controls = new OrbitControls(this.camera, this.renderer.domElement);
+      const controls = new this.$OrbitControls(
+        this.camera,
+        this.renderer.domElement
+      );
       this.controls = controls;
       window.addEventListener("resize", this.onWindowResize, false);
 
@@ -67,30 +67,30 @@ export default {
     },
 
     meshToThreejs(mesh, material) {
-      let loader = new THREE.BufferGeometryLoader();
+      let loader = new this.$THREE.BufferGeometryLoader();
       var geometry = loader.parse(mesh.toThreejsJSON());
-      return new THREE.Mesh(geometry, material);
+      return new this.$THREE.Mesh(geometry, material);
     },
 
     compute() {
       console.log("in compute");
       let sphere = new this.$rhino.Sphere([0, 0, 0], 4);
       this.$RhinoCompute.Mesh.createFromSphere(sphere, 15, 15, false).then(
-        (result) => {
+        result => {
           console.log(result);
           if (result !== undefined) {
             let mesh = this.$rhino.CommonObject.decode(result);
             console.log(mesh.vertices().count);
             let threemesh = this.meshToThreejs(
               mesh,
-              new THREE.MeshNormalMaterial({ wireframe: true })
+              new this.$THREE.MeshNormalMaterial({ wireframe: true })
             );
             this.scene.add(threemesh);
           }
         }
       );
-    },
-  },
+    }
+  }
 };
 </script>
 

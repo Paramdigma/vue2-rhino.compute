@@ -5,8 +5,6 @@
 </template>
 
 <script>
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { Rhino3dmLoader } from "three/examples/jsm/loaders/3DMLoader.js";
 export default {
   name: "Grasshopper",
@@ -32,11 +30,11 @@ export default {
     init() {
       var container = this.$refs["canvas"];
       // Rhino models are z-up, so set this as the default
-      THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
+      this.$THREE.Object3D.DefaultUp = new this.$THREE.Vector3(0, 0, 1);
 
-      this.scene = new THREE.Scene();
-      this.scene.background = new THREE.Color(1, 1, 1);
-      this.camera = new THREE.PerspectiveCamera(
+      this.scene = new this.$THREE.Scene();
+      this.scene.background = new this.$THREE.Color(1, 1, 1);
+      this.camera = new this.$THREE.PerspectiveCamera(
         75,
         window.innerWidth / window.innerHeight,
         0.1,
@@ -47,12 +45,15 @@ export default {
       this.camera.position.y = 50;
       this.camera.position.z = 25;
 
-      this.renderer = new THREE.WebGLRenderer({ antialias: true });
+      this.renderer = new this.$THREE.WebGLRenderer({ antialias: true });
       this.renderer.setPixelRatio(window.devicePixelRatio);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(this.renderer.domElement);
       // add some controls to orbit the camera
-      const controls = new OrbitControls(this.camera, this.renderer.domElement);
+      const controls = new this.$OrbitControls(
+        this.camera,
+        this.renderer.domElement
+      );
       this.controls = controls;
       window.addEventListener("resize", this.onWindowResize, false);
 
@@ -72,13 +73,13 @@ export default {
     },
 
     meshToThreejs(mesh, material) {
-      let loader = new THREE.BufferGeometryLoader();
+      let loader = new this.$THREE.BufferGeometryLoader();
       var geometry = loader.parse(mesh.toThreejsJSON());
-      return new THREE.Mesh(geometry, material);
+      return new this.$THREE.Mesh(geometry, material);
     },
 
     async loadGhFile() {
-      const definitionName = "/grasshopper/worm.gh";
+      const definitionName = "/grasshopper/BranchNodeRnd.gh";
       let url = definitionName;
       let res = await fetch(url);
       console.log("res:0", res);
@@ -86,6 +87,7 @@ export default {
       this.definition = new Uint8Array(buffer);
       console.log("buffer: ", buffer, "definition: ", this.definition);
     },
+
     async compute() {
       console.log("in compute");
       const crvPoints = new this.$rhino.Point3dList();
@@ -157,7 +159,7 @@ export default {
         "https://cdn.jsdelivr.net/npm/rhino3dm@0.15.0-beta/"
       );
 
-      const resMaterial = new THREE.MeshBasicMaterial({
+      const resMaterial = new this.$THREE.MeshBasicMaterial({
         vertexColors: true,
         wireframe: true
       });
