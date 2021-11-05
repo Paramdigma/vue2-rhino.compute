@@ -14,12 +14,8 @@ export default {
       scene: {},
       camera: {},
       renderer: {},
-      controls: {}
+      controls: {},
     };
-  },
-  beforeMount() {
-    this.$RhinoCompute.url = "http://localhost:8081/";
-    this.$RhinoCompute.authToken = this.$RhinoCompute.getAuthToken();
   },
   mounted() {
     if (this.$refs.canvas) {
@@ -80,7 +76,7 @@ export default {
       console.log("in compute");
       let sphere = new this.$rhino.Sphere([0, 0, 0], 4);
       this.$RhinoCompute.Mesh.createFromSphere(sphere, 15, 15, false).then(
-        result => {
+        (result) => {
           console.log(result);
           if (result !== undefined) {
             let mesh = this.$rhino.CommonObject.decode(result);
@@ -93,8 +89,8 @@ export default {
           }
         }
       );
-    }
-  }
+    },
+  },
 };
 </script>
 

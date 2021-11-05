@@ -21,10 +21,6 @@ export default {
       doc: undefined
     };
   },
-  beforeMount() {
-    this.$RhinoCompute.url = "http://localhost:8081/";
-    this.$RhinoCompute.authToken = this.$RhinoCompute.getAuthToken();
-  },
   async mounted() {
     if (this.$refs.canvas) {
       await this.loadGhFile();
