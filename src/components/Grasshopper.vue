@@ -1,6 +1,8 @@
 <template>
   <div>
-    <div>
+    <div v-if="!loaded" id="loader"></div>
+
+    <!-- <div>
       <input
         @input="onInputChanged"
         type="range"
@@ -25,7 +27,7 @@
         :step="radius_slider.step"
       />
       <label for="radius">Radius</label>
-    </div>
+    </div> -->
     <div>
       <input
         @input="onInputChanged"
@@ -44,17 +46,17 @@
 </template>
 
 <script>
-// import { Rhino3dmLoader } from "three/examples/jsm/loaders/3DMLoader.js";
 export default {
   name: "Grasshopper",
   data() {
     return {
-      scene: {},
-      camera: {},
-      renderer: {},
-      controls: {},
-      definition: null,
+      loaded: false,
+      scene: null,
+      camera: null,
+      renderer: null,
+      controls: null,
       doc: undefined,
+      definition: null,
       radius_slider: {
         value: 3.0,
         min: 0,
@@ -63,8 +65,8 @@ export default {
       },
       length_slider: {
         value: 8.0,
-        min: 0,
-        max: 10.0,
+        min: 5.0,
+        max: 20.0,
         step: 0.1
       },
       count_slider: {
@@ -133,7 +135,7 @@ export default {
     },
 
     async loadGhFile() {
-      const definitionName = "grasshopper/BranchNodeRnd.gh";
+      const definitionName = "/grasshopper/FlatTruss.gh";
       let url = definitionName;
       let res = await fetch(url);
       console.log("res:0", res);
@@ -144,51 +146,126 @@ export default {
 
     async compute() {
       console.log("in compute");
+      const crvPoints = new this.$rhino.Point3dList();
+      crvPoints.add(0, 0, 0);
+      crvPoints.add(10, 10, 0);
+      crvPoints.add(20, -10, 0);
+      crvPoints.add(30, 10, 20);
+      crvPoints.add(40, -10, -20);
+      crvPoints.add(50, 0, 0);
+      const nCrv = this.$rhino.NurbsCurve.create(false, 3, crvPoints);
+      var crvData = JSON.stringify(nCrv.encode());
+      this.crvData = crvData;
       const param1 = new this.$RhinoCompute.Grasshopper.DataTree("Length");
       param1.append([0], [this.length_slider.value]);
-
-      const param2 = new this.$RhinoCompute.Grasshopper.DataTree("Radius");
-      param2.append([0], [this.radius_slider.value]);
-
-      const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
-      param3.append([0], [this.count_slider.value]);
-
+      console.log("params:", param1);
       // clear values
-      const trees = [];
+      let trees = [];
       trees.push(param1);
-      trees.push(param2);
-      trees.push(param3);
-
+      // Call RhinoCompute
       const res = await this.$RhinoCompute.Grasshopper.evaluateDefinition(
         this.definition,
         trees
       );
-
-      console.log(res);
-
-      // hide spinner
-
-      const data = JSON.parse(res.values[0].InnerTree["{0}"][0].data);
-      console.log("data json parsed:", data);
-      const mesh = this.$rhino.DracoCompression.decompressBase64String(data);
-      console.log("decompressd mesh:", mesh);
-
-      const material = new this.$THREE.MeshNormalMaterial();
-      const threeMesh = this.meshToThreejs(mesh, material);
-
-      // // clear the scene
-      this.scene.traverse(child => {
-        if (child.isMesh) {
-          this.scene.remove(child);
+      console.log("grasshopper res:", res);
+      this.collectResults(res);
+    },
+    collectResults(responseJson) {
+      const values = responseJson.values;
+      // clear doc
+      if (this.doc !== undefined) this.doc.delete();
+      //console.log(values)
+      this.doc = new this.$rhino.File3dm();
+      // for each output (RH_OUT:*)...
+      for (let i = 0; i < values.length; i++) {
+        // ...iterate through data tree structure...
+        for (const path in values[i].InnerTree) {
+          const branch = values[i].InnerTree[path];
+          // ...and for each branch...
+          for (let j = 0; j < branch.length; j++) {
+            // ...load rhino geometry into doc
+            const rhinoObject = this.decodeItem(branch[j]);
+            if (rhinoObject !== null) {
+              this.doc.objects().add(rhinoObject, null);
+            }
+          }
         }
+      }
+      console.log("doc: ", this.doc);
+      if (this.doc.objects().count < 1) {
+        console.error("No rhino objects to load!");
+        this.showSpinner(false);
+        return;
+      }
+      // set up loader for converting the results to threejs
+      const loader = new this.$Rhino3dmLoader();
+      loader.setLibraryPath(
+        "https://cdn.jsdelivr.net/npm/rhino3dm@0.15.0-beta/"
+      );
+      const resMaterial = new this.$THREE.MeshBasicMaterial({
+        vertexColors: true,
+        wireframe: true
       });
-      this.scene.add(threeMesh);
+      // load rhino doc into three.js scene
+      const buffer = new Uint8Array(this.doc.toByteArray()).buffer;
+      loader.parse(buffer, object => {
+        // add material to resulting meshes
+        object.traverse(child => {
+          child.material = resMaterial;
+        });
+        // add object graph from rhino model to three.js scene
+        this.scene.add(object);
+        // hide spinner
+        this.showSpinner(false);
+      });
+    },
+    decodeItem(item) {
+      const data = JSON.parse(item.data);
+      if (item.type === "System.String") {
+        // hack for draco meshes
+        try {
+          return this.$rhino.DracoCompression.decompressBase64String(data);
+        } catch {
+          alert("error decompressing data");
+        } // ignore errors (maybe the string was just a string...)
+      } else if (typeof data === "object") {
+        return this.$rhino.CommonObject.decode(data);
+      }
+      return null;
     },
     async onInputChanged() {
+      this.showSpinner(true);
       await this.compute();
+    },
+    showSpinner(enable) {
+      if (enable) {
+        this.loaded = false;
+      } else this.loaded = true;
     }
   }
 };
 </script>
 
-<style></style>
+<style lang="scss">
+#loader {
+  border: 5px solid #f3f3f3; /* Light grey */
+  border-top: 5px solid #3d3d3d; /* Grey */
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+</style>
