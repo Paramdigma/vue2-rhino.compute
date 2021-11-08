@@ -21,7 +21,8 @@ export default {
   data() {
     return {
       isParametric: false,
-      switchTitle: "Grasshopper"
+      switchTitle: "Grasshopper",
+      viewer: null,
     };
   },
   components: {
@@ -35,38 +36,28 @@ export default {
       } else if (newP == false) {
         this.switchTitle = "Grasshopper";
       }
-    }
+    },
   },
   mounted() {
     if (this.$refs.canvas) {
       var container = this.$refs.canvas;
       console.log("container :", container);
-      let viewer = new ThreeViewer(container);
-      viewer.init();
+      this.viewer = new ThreeViewer(container);
+      this.viewer.init();
       this.compute();
     }
   },
   methods: {
-    meshToThreejs(mesh, material) {
-      let loader = new this.$THREE.BufferGeometryLoader();
-      var geometry = loader.parse(mesh.toThreejsJSON());
-      return new this.$THREE.Mesh(geometry, material);
-    },
-
     compute() {
       console.log("in compute");
       let sphere = new this.$rhino.Sphere([0, 0, 0], 4);
       this.$RhinoCompute.Mesh.createFromSphere(sphere, 15, 15, false).then(
-        result => {
+        (result) => {
           console.log(result);
           if (result !== undefined) {
             let mesh = this.$rhino.CommonObject.decode(result);
             console.log(mesh.vertices().count);
-            let threemesh = this.meshToThreejs(
-              mesh,
-              new this.$THREE.MeshNormalMaterial({ wireframe: true })
-            );
-            this.scene.add(threemesh);
+            this.viewer.addMeshToScene(mesh);
           }
         }
       );
@@ -74,8 +65,8 @@ export default {
     changeViewer() {
       this.isParametric = !this.isParametric;
       console.clear();
-    }
-  }
+    },
+  },
 };
 </script>
 
