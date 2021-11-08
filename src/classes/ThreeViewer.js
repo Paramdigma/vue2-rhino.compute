@@ -50,7 +50,7 @@ export default class ThreeViewer {
 
     animate();
 
-    console.log(this.Scene, this.Renderer, this.Camera, this.Controls);
+    // console.log(this.Scene, this.Renderer, this.Camera, this.Controls);
 
     function onWindowResize() {
       $this.Camera.aspect = window.innerWidth / window.innerHeight;
