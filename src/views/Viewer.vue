@@ -13,15 +13,19 @@
 <script>
 import Rhino from "@/components/Rhino.vue";
 import Grasshopper from "@/components/Grasshopper.vue";
-
+import MyNameClass from "@/classes/MyNameClass.js";
 export default {
   name: "Viewer",
   data() {
-    return { isParametric: false, switchTitle: "Grasshopper" };
+    return {
+      isParametric: false,
+      switchTitle: "Grasshopper",
+      christianName: ""
+    };
   },
   components: {
     Rhino,
-    Grasshopper,
+    Grasshopper
   },
   watch: {
     isParametric: function (newP) {
@@ -30,19 +34,23 @@ export default {
       } else if (newP == false) {
         this.switchTitle = "Grasshopper";
       }
-    },
+    }
   },
   beforeMount() {
     this.$RhinoCompute.url = "http://localhost:8081/";
     this.$RhinoCompute.authToken = this.$RhinoCompute.getAuthToken();
     this.$RhinoCompute.apiKey = this.$RhinoCompute.getAuthToken();
+    this.christianName = new MyNameClass("Christian", "Dimitri");
+  },
+  mounted() {
+    console.log("my class name :", this.christianName.getFullName());
   },
   methods: {
     changeViewer() {
       this.isParametric = !this.isParametric;
       console.clear();
-    },
-  },
+    }
+  }
 };
 </script>
 

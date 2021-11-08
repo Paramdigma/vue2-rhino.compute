@@ -1,45 +1,44 @@
 <template>
-  <div>
+  <div class="container">
     <div v-if="!loaded" id="loader"></div>
-
-    <!-- <div>
-      <input
-        @input="onInputChanged"
-        type="range"
-        id="count"
-        name="count"
-        :min="count_slider.min"
-        :max="count_slider.max"
-        :step="count_slider.step"
-        v-model="count_slider.value"
-      />
-      <label for="count">Count</label>
+    <div class="param px-6">
+      <b-field label="Subdivision count">
+        <b-slider
+          :min="count_slider.min"
+          :max="count_slider.max"
+          :step="count_slider.step"
+          v-model="count_slider.value"
+          lazy
+          ticks
+          @change="onInputChanged"
+        ></b-slider>
+      </b-field>
     </div>
-    <div>
-      <input
-        @input="onInputChanged"
-        type="range"
-        id="radius"
-        name="radius"
-        :min="radius_slider.min"
-        :max="radius_slider.max"
-        v-model="radius_slider.value"
-        :step="radius_slider.step"
-      />
-      <label for="radius">Radius</label>
-    </div> -->
-    <div>
-      <input
-        @input="onInputChanged"
-        type="range"
-        id="length"
-        name="length"
-        :min="length_slider.min"
-        :max="length_slider.max"
-        v-model="length_slider.value"
-        :step="length_slider.step"
-      />
-      <label for="length">Length</label>
+    <div class="param px-6">
+      <b-field label="Roof type">
+        <b-slider
+          :min="roof_typology.min"
+          :max="roof_typology.max"
+          :step="roof_typology.step"
+          v-model="roof_typology.value"
+          lazy
+          ticks
+          @change="onInputChanged"
+        ></b-slider>
+      </b-field>
+    </div>
+    <div class="param px-6">
+      <b-field label="Truss Width">
+        <b-slider
+          :min="truss_width.min"
+          :max="truss_width.max"
+          :step="truss_width.step"
+          v-model="truss_width.value"
+          lazy
+          ticks
+          @change="onInputChanged"
+        ></b-slider>
+      </b-field>
     </div>
     <div ref="canvas"></div>
   </div>
@@ -57,20 +56,20 @@ export default {
       controls: null,
       doc: undefined,
       definition: null,
-      radius_slider: {
-        value: 3.0,
+      roof_typology: {
+        value: 0,
         min: 0,
-        max: 10.0,
-        step: 0.1
+        max: 3,
+        step: 1
       },
-      length_slider: {
+      truss_width: {
         value: 8.0,
         min: 5.0,
         max: 20.0,
         step: 0.1
       },
       count_slider: {
-        value: 65,
+        value: 5,
         min: 1,
         max: 100,
         step: 1
@@ -135,7 +134,7 @@ export default {
     },
 
     async loadGhFile() {
-      const definitionName = "/grasshopper/FlatTruss.gh";
+      const definitionName = "/grasshopper/Truss.gh";
       let url = definitionName;
       let res = await fetch(url);
       console.log("res:0", res);
@@ -146,36 +145,41 @@ export default {
 
     async compute() {
       console.log("in compute");
-      const crvPoints = new this.$rhino.Point3dList();
-      crvPoints.add(0, 0, 0);
-      crvPoints.add(10, 10, 0);
-      crvPoints.add(20, -10, 0);
-      crvPoints.add(30, 10, 20);
-      crvPoints.add(40, -10, -20);
-      crvPoints.add(50, 0, 0);
-      const nCrv = this.$rhino.NurbsCurve.create(false, 3, crvPoints);
-      var crvData = JSON.stringify(nCrv.encode());
-      this.crvData = crvData;
+
       const param1 = new this.$RhinoCompute.Grasshopper.DataTree("Length");
-      param1.append([0], [this.length_slider.value]);
-      console.log("params:", param1);
-      // clear values
+      param1.append([0], [this.truss_width.value]);
+
+      const param2 = new this.$RhinoCompute.Grasshopper.DataTree("Typology");
+      param2.append([0], [this.roof_typology.value]);
+
+      const param3 = new this.$RhinoCompute.Grasshopper.DataTree(
+        "Subdivision Count"
+      );
+      param3.append([0], [this.count_slider.value]);
+
+      // // clear values
       let trees = [];
       trees.push(param1);
+      trees.push(param2);
+      trees.push(param3);
+
       // Call RhinoCompute
       const res = await this.$RhinoCompute.Grasshopper.evaluateDefinition(
         this.definition,
         trees
       );
+
       console.log("grasshopper res:", res);
       this.collectResults(res);
     },
+
     collectResults(responseJson) {
       const values = responseJson.values;
       // clear doc
       if (this.doc !== undefined) this.doc.delete();
-      //console.log(values)
+
       this.doc = new this.$rhino.File3dm();
+
       // for each output (RH_OUT:*)...
       for (let i = 0; i < values.length; i++) {
         // ...iterate through data tree structure...
@@ -191,21 +195,23 @@ export default {
           }
         }
       }
-      console.log("doc: ", this.doc);
+
       if (this.doc.objects().count < 1) {
-        console.error("No rhino objects to load!");
         this.showSpinner(false);
         return;
       }
+
       // set up loader for converting the results to threejs
       const loader = new this.$Rhino3dmLoader();
       loader.setLibraryPath(
         "https://cdn.jsdelivr.net/npm/rhino3dm@0.15.0-beta/"
       );
+
       const resMaterial = new this.$THREE.MeshBasicMaterial({
         vertexColors: true,
         wireframe: true
       });
+
       // load rhino doc into three.js scene
       const buffer = new Uint8Array(this.doc.toByteArray()).buffer;
       loader.parse(buffer, object => {
@@ -213,12 +219,18 @@ export default {
         object.traverse(child => {
           child.material = resMaterial;
         });
-        // add object graph from rhino model to three.js scene
+
+        this.scene.traverse(child => {
+          this.scene.remove(child);
+        });
+
         this.scene.add(object);
+
         // hide spinner
         this.showSpinner(false);
       });
     },
+
     decodeItem(item) {
       const data = JSON.parse(item.data);
       if (item.type === "System.String") {
@@ -233,10 +245,12 @@ export default {
       }
       return null;
     },
-    async onInputChanged() {
+
+    onInputChanged() {
       this.showSpinner(true);
-      await this.compute();
+      this.compute();
     },
+
     showSpinner(enable) {
       if (enable) {
         this.loaded = false;
