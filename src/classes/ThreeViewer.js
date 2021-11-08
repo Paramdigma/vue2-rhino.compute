@@ -7,21 +7,23 @@ export default class ThreeViewer {
   Camera = null;
   Controls = null;
   Scene = null;
+  THREE = null;
 
   constructor(vcanvas) {
     this.Canvas = vcanvas;
+    this.THREE = THREE;
   }
   init() {
     var $this = this;
     var container = this.Canvas;
 
     // Rhino models are z-up, so set this as the default
-    THREE.Object3D.DefaultUp = new THREE.Vector3(0, 0, 1);
+    this.THREE.Object3D.DefaultUp = new this.THREE.Vector3(0, 0, 1);
 
-    this.Scene = new THREE.Scene();
-    this.Scene.background = new THREE.Color(1, 1, 1);
+    this.Scene = new this.THREE.Scene();
+    this.Scene.background = new this.THREE.Color(1, 1, 1);
 
-    this.Camera = new THREE.PerspectiveCamera(
+    this.Camera = new this.THREE.PerspectiveCamera(
       45,
       window.innerWidth / window.innerHeight,
       0.1,
@@ -30,7 +32,7 @@ export default class ThreeViewer {
 
     this.Camera.position.y = 50;
 
-    this.Renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.Renderer = new this.THREE.WebGLRenderer({ antialias: true });
     this.Renderer.setPixelRatio(window.devicePixelRatio);
     this.Renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(this.Renderer.domElement);
@@ -55,6 +57,19 @@ export default class ThreeViewer {
       $this.Camera.updateProjectionMatrix();
       $this.Renderer.setSize(window.innerWidth, window.innerHeight);
       animate();
+    }
+  }
+  addMeshToScene(mesh) {
+    let threemesh = meshToThreejs(
+      mesh,
+      new THREE.MeshNormalMaterial({ wireframe: true })
+    );
+    this.Scene.add(threemesh);
+
+    function meshToThreejs(mesh, material) {
+      let loader = new THREE.BufferGeometryLoader();
+      var geometry = loader.parse(mesh.toThreejsJSON());
+      return new THREE.Mesh(geometry, material);
     }
   }
 }
