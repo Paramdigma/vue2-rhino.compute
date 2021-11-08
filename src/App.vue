@@ -56,56 +56,56 @@ $colors: mergeColorMaps(
   (
     "white": (
       $white,
-      $black
+      $black,
     ),
     "black": (
       $black,
-      $white
+      $white,
     ),
     "light": (
       $light,
-      $light-invert
+      $light-invert,
     ),
     "dark": (
       $dark,
-      $dark-invert
+      $dark-invert,
     ),
     "primary": (
       $primary,
       $primary-invert,
       $primary-light,
-      $primary-dark
+      $primary-dark,
     ),
     "link": (
       $link,
       $link-invert,
       $link-light,
-      $link-dark
+      $link-dark,
     ),
     "info": (
       $info,
       $info-invert,
       $info-light,
-      $info-dark
+      $info-dark,
     ),
     "success": (
       $success,
       $success-invert,
       $success-light,
-      $success-dark
+      $success-dark,
     ),
     "warning": (
       $warning,
       $warning-invert,
       $warning-light,
-      $warning-dark
+      $warning-dark,
     ),
     "danger": (
       $danger,
       $danger-invert,
       $danger-light,
-      $danger-dark
-    )
+      $danger-dark,
+    ),
   ),
   $custom-colors
 );
