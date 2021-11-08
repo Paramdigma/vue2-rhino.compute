@@ -22,7 +22,7 @@ export default {
     return {
       isParametric: false,
       switchTitle: "Grasshopper",
-      viewer: null,
+      viewer: null
     };
   },
   components: {
@@ -36,15 +36,15 @@ export default {
       } else if (newP == false) {
         this.switchTitle = "Grasshopper";
       }
-    },
+    }
   },
-  mounted() {
+  async mounted() {
     if (this.$refs.canvas) {
       var container = this.$refs.canvas;
       console.log("container :", container);
       this.viewer = new ThreeViewer(container);
       this.viewer.init();
-      this.compute();
+      await this.compute();
     }
   },
   methods: {
@@ -52,7 +52,7 @@ export default {
       console.log("in compute");
       let sphere = new this.$rhino.Sphere([0, 0, 0], 4);
       this.$RhinoCompute.Mesh.createFromSphere(sphere, 15, 15, false).then(
-        (result) => {
+        result => {
           console.log(result);
           if (result !== undefined) {
             let mesh = this.$rhino.CommonObject.decode(result);
@@ -65,8 +65,8 @@ export default {
     changeViewer() {
       this.isParametric = !this.isParametric;
       console.clear();
-    },
-  },
+    }
+  }
 };
 </script>
 
