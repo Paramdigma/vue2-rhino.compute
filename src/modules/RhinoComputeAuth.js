@@ -5,6 +5,6 @@ export function RhinoComputeAuth() {
   window.RhinoCompute.authToken = process.env.VUE_APP_RHINO_COMPUTE_API_KEY;
   return {
     url: process.env.VUE_APP_RHINO_COMPUTE_URL,
-    key: process.env.VUE_APP_RHINO_COMPUTE_API_KEY
+    key: process.env.VUE_APP_RHINO_COMPUTE_API_KEY,
   };
 }
