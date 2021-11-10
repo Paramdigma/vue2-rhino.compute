@@ -15,8 +15,16 @@ RhinoService.prototype.init = function () {
         resolve();
       });
     } else {
-      alert("couldn't load rhino3dm");
+      alert("Couldn't load rhino3dm");
       reject();
     }
   });
+};
+
+RhinoService.prototype.loadFileFromUrl = async function (url) {
+  let res = await fetch(url);
+  console.log("res:0", res);
+  let buffer = await res.arrayBuffer();
+  var definition = new Uint8Array(buffer);
+  console.log("buffer: ", buffer, "definition: ", this.definition);
 };

@@ -25,7 +25,8 @@ export default {
       // isParametric: false,
       // switchTitle: "Grasshopper",
       viewer: null,
-      rhinoService: null
+      rhinoService: null,
+      url: "/grasshopper/Truss.gh"
     };
   },
   components: {
@@ -47,28 +48,16 @@ export default {
       console.log("container :", container);
       this.viewer = new ThreeViewer(container);
       this.viewer.init();
-      // eslint-disable-next-line no-unused-vars
       this.rhinoService = new RhinoService();
       await this.rhinoService.init();
       console.log("Rhino compute", window.RhinoCompute);
       console.log("Rhino3dm", window.Rhino3dm);
-      // await this.compute();
+      await this.loadGHModel();
     }
   },
   methods: {
-    async compute() {
-      console.log("in compute");
-      // let sphere = new this.$rhino.Sphere([0, 0, 0], 4);
-      // this.$RhinoCompute.Mesh.createFromSphere(sphere, 15, 15, false).then(
-      //   result => {
-      //     console.log(result);
-      //     if (result !== undefined) {
-      //       let mesh = this.$rhino.CommonObject.decode(result);
-      //       console.log(mesh.vertices().count);
-      //       this.viewer.addMeshToScene(mesh);
-      //     }
-      //   }
-      // );
+    async loadGHModel() {
+      console.log("loading grasshopper model");
     }
     // changeViewer() {
     //   this.isParametric = !this.isParametric;
