@@ -56,6 +56,7 @@ export default {
       loaded: false,
       doc: undefined,
       definition: null,
+      rhinoService: null,
       roof_typology: {
         value: 0,
         min: 0,
@@ -77,7 +78,8 @@ export default {
     };
   },
   beforeMount() {
-    new RhinoService().init();
+    this.rhinoService = new RhinoService();
+    this.rhinoService.init();
     console.log(window.RhinoCompute, window.Rhino3dm);
   },
   async mounted() {
@@ -91,12 +93,9 @@ export default {
   methods: {
     async loadGhFile() {
       const definitionName = "/grasshopper/Truss.gh";
-      let url = definitionName;
-      let res = await fetch(url);
-      console.log("res:0", res);
-      let buffer = await res.arrayBuffer();
-      this.definition = new Uint8Array(buffer);
-      console.log("buffer: ", buffer, "definition: ", this.definition);
+      this.definition = await this.rhinoService.loadGrasshopperFileLocally(
+        definitionName
+      );
     },
 
     async compute() {

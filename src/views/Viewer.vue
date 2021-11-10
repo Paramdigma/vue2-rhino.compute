@@ -19,6 +19,7 @@ export default {
     return {
       // isParametric: false,
       // switchTitle: "Grasshopper",
+      rhinoService: null,
       viewer: null,
       definition: null,
       trees: [],
@@ -45,8 +46,8 @@ export default {
       }
     }
   },
-  async beforeMount() {
-    await this.initRhinoServices();
+  beforeMount() {
+    this.initRhinoServices();
   },
   async mounted() {
     if (this.$refs.canvas) {
@@ -55,9 +56,9 @@ export default {
     }
   },
   methods: {
-    async initRhinoServices() {
-      var rhinoService = new RhinoService();
-      await rhinoService.init();
+    initRhinoServices() {
+      this.rhinoService = new RhinoService();
+      this.rhinoService.init();
     },
     initViewer() {
       var container = this.$refs.canvas;
@@ -68,7 +69,7 @@ export default {
     async loadGrasshopperModel() {
       this.loaded++;
       // console.log("loading grasshopper model");
-      this.definition = await new RhinoService().loadGrasshopperFileLocally(
+      this.definition = await this.rhinoService.loadGrasshopperFileLocally(
         "/grasshopper/Truss.gh"
       );
     },
@@ -78,7 +79,7 @@ export default {
       // var paramA = grasshopperParameterA.GetParameter();
       const param = new window.RhinoCompute.Grasshopper.DataTree("Length");
       console.log(window.RhinoCompute.Grasshopper);
-      param.append([0, [10]]);
+      param.append([0], [10]);
       // var grasshopperParameterB = new GrasshopperParameter("Typology", 0);
       // var paramB = grasshopperParameterB.GetParameter();
 
