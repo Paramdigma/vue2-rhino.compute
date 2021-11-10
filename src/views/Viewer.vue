@@ -16,13 +16,16 @@
 // import Rhino from "@/components/Rhino.vue";
 // import Grasshopper from "@/components/Grasshopper.vue";
 import ThreeViewer from "@/classes/ThreeViewer.js";
+import RhinoService from "@/modules/RhinoService.js";
+
 export default {
   name: "Viewer",
   data() {
     return {
-      isParametric: false,
-      switchTitle: "Grasshopper",
-      viewer: null
+      // isParametric: false,
+      // switchTitle: "Grasshopper",
+      viewer: null,
+      rhinoService: null
     };
   },
   components: {
@@ -44,28 +47,33 @@ export default {
       console.log("container :", container);
       this.viewer = new ThreeViewer(container);
       this.viewer.init();
-      await this.compute();
+      // eslint-disable-next-line no-unused-vars
+      this.rhinoService = new RhinoService();
+      await this.rhinoService.init();
+      console.log("Rhino compute", window.RhinoCompute);
+      console.log("Rhino3dm", window.Rhino3dm);
+      // await this.compute();
     }
   },
   methods: {
-    compute() {
+    async compute() {
       console.log("in compute");
-      let sphere = new this.$rhino.Sphere([0, 0, 0], 4);
-      this.$RhinoCompute.Mesh.createFromSphere(sphere, 15, 15, false).then(
-        result => {
-          console.log(result);
-          if (result !== undefined) {
-            let mesh = this.$rhino.CommonObject.decode(result);
-            console.log(mesh.vertices().count);
-            this.viewer.addMeshToScene(mesh);
-          }
-        }
-      );
-    },
-    changeViewer() {
-      this.isParametric = !this.isParametric;
-      console.clear();
+      // let sphere = new this.$rhino.Sphere([0, 0, 0], 4);
+      // this.$RhinoCompute.Mesh.createFromSphere(sphere, 15, 15, false).then(
+      //   result => {
+      //     console.log(result);
+      //     if (result !== undefined) {
+      //       let mesh = this.$rhino.CommonObject.decode(result);
+      //       console.log(mesh.vertices().count);
+      //       this.viewer.addMeshToScene(mesh);
+      //     }
+      //   }
+      // );
     }
+    // changeViewer() {
+    //   this.isParametric = !this.isParametric;
+    //   console.clear();
+    // }
   }
 };
 </script>
