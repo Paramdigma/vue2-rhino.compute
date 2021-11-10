@@ -11,7 +11,7 @@ RhinoService.prototype.init = function async() {
       window.RhinoCompute.apiKey = process.env.VUE_APP_RHINO_COMPUTE_API_KEY;
       window.RhinoCompute.authToken = process.env.VUE_APP_RHINO_COMPUTE_API_KEY;
 
-      window.rhino3dm().then((rh) => {
+      window.rhino3dm().then(rh => {
         window.Rhino3dm = rh;
         resolve();
       });
@@ -27,7 +27,7 @@ RhinoService.prototype.loadGrasshopperFileLocally = async function (filePath) {
   // console.log("res:0", res);
   let buffer = await res.arrayBuffer();
   var definition = new Uint8Array(buffer);
-  // console.log("buffer: ", buffer, "definition: ", definition);
+  console.log("buffer: ", buffer, "definition: ", definition);
   return definition;
 };
 
