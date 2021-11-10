@@ -1,5 +1,14 @@
 <template>
   <div class="about">
-    <h1>This is an about page</h1>
+    <grasshopper></grasshopper>
   </div>
 </template>
+<script>
+import Grasshopper from "@/components/Grasshopper.vue";
+export default {
+  name: "About",
+  components: { Grasshopper },
+};
+</script>
+
+<style></style>

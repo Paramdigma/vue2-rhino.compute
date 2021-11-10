@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div v-if="!loaded" id="loader"></div>
-    <div class="param px-6">
+    <!-- <div class="param px-6">
       <b-field label="Subdivision count">
         <b-slider
           :min="count_slider.min"
@@ -39,100 +39,56 @@
           @change="onInputChanged"
         ></b-slider>
       </b-field>
-    </div>
+    </div> -->
     <div ref="canvas"></div>
   </div>
 </template>
 
 <script>
+import ThreeViewer from "@/classes/ThreeViewer.js";
+import RhinoService from "@/modules/RhinoService.js";
+import { Rhino3dmLoader } from "three/examples/jsm/loaders/3DMLoader.js";
 export default {
   name: "Grasshopper",
   data() {
     return {
+      viewer: null,
       loaded: false,
-      scene: null,
-      camera: null,
-      renderer: null,
-      controls: null,
       doc: undefined,
       definition: null,
       roof_typology: {
         value: 0,
         min: 0,
         max: 3,
-        step: 1,
+        step: 1
       },
       truss_width: {
         value: 8.0,
         min: 5.0,
         max: 20.0,
-        step: 0.1,
+        step: 0.1
       },
       count_slider: {
         value: 5,
         min: 1,
         max: 100,
-        step: 1,
-      },
+        step: 1
+      }
     };
+  },
+  beforeMount() {
+    new RhinoService().init();
+    console.log(window.RhinoCompute, window.Rhino3dm);
   },
   async mounted() {
     if (this.$refs.canvas) {
-      this.init();
+      this.viewer = new ThreeViewer(this.$refs.canvas);
+      this.viewer.init();
       await this.loadGhFile();
       await this.compute();
     }
   },
   methods: {
-    init() {
-      var container = this.$refs["canvas"];
-      // Rhino models are z-up, so set this as the default
-      this.$THREE.Object3D.DefaultUp = new this.$THREE.Vector3(0, 0, 1);
-
-      this.scene = new this.$THREE.Scene();
-      this.scene.background = new this.$THREE.Color(1, 1, 1);
-      this.camera = new this.$THREE.PerspectiveCamera(
-        45,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-      );
-
-      this.camera.position.y = 50;
-
-      this.renderer = new this.$THREE.WebGLRenderer({ antialias: true });
-      this.renderer.setPixelRatio(window.devicePixelRatio);
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      container.appendChild(this.renderer.domElement);
-      // add some controls to orbit the camera
-      const controls = new this.$OrbitControls(
-        this.camera,
-        this.renderer.domElement
-      );
-      this.controls = controls;
-      window.addEventListener("resize", this.onWindowResize, false);
-
-      this.animate();
-    },
-    animate() {
-      requestAnimationFrame(this.animate);
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
-    },
-
-    onWindowResize() {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      this.animate();
-    },
-
-    meshToThreejs(mesh, material) {
-      let loader = new this.$THREE.BufferGeometryLoader();
-      var geometry = loader.parse(mesh.toThreejsJSON());
-      return new this.$THREE.Mesh(geometry, material);
-    },
-
     async loadGhFile() {
       const definitionName = "/grasshopper/Truss.gh";
       let url = definitionName;
@@ -146,13 +102,13 @@ export default {
     async compute() {
       console.log("in compute");
 
-      const param1 = new this.$RhinoCompute.Grasshopper.DataTree("Length");
+      const param1 = new window.RhinoCompute.Grasshopper.DataTree("Length");
       param1.append([0], [this.truss_width.value]);
 
-      const param2 = new this.$RhinoCompute.Grasshopper.DataTree("Typology");
+      const param2 = new window.RhinoCompute.Grasshopper.DataTree("Typology");
       param2.append([0], [this.roof_typology.value]);
 
-      const param3 = new this.$RhinoCompute.Grasshopper.DataTree(
+      const param3 = new window.RhinoCompute.Grasshopper.DataTree(
         "Subdivision Count"
       );
       param3.append([0], [this.count_slider.value]);
@@ -164,7 +120,7 @@ export default {
       trees.push(param3);
 
       // Call RhinoCompute
-      const res = await this.$RhinoCompute.Grasshopper.evaluateDefinition(
+      const res = await window.RhinoCompute.Grasshopper.evaluateDefinition(
         this.definition,
         trees
       );
@@ -178,7 +134,7 @@ export default {
       // clear doc
       if (this.doc !== undefined) this.doc.delete();
 
-      this.doc = new this.$rhino.File3dm();
+      this.doc = new window.Rhino3dm.File3dm();
 
       // for each output (RH_OUT:*)...
       for (let i = 0; i < values.length; i++) {
@@ -202,29 +158,31 @@ export default {
       }
 
       // set up loader for converting the results to threejs
-      const loader = new this.$Rhino3dmLoader();
+      const loader = new Rhino3dmLoader();
       loader.setLibraryPath(
         "https://cdn.jsdelivr.net/npm/rhino3dm@0.15.0-beta/"
       );
 
-      const resMaterial = new this.$THREE.MeshBasicMaterial({
+      const resMaterial = new this.viewer.THREE.MeshBasicMaterial({
         vertexColors: true,
-        wireframe: true,
+        wireframe: true
       });
 
       // load rhino doc into three.js scene
       const buffer = new Uint8Array(this.doc.toByteArray()).buffer;
-      loader.parse(buffer, (object) => {
+      loader.parse(buffer, object => {
         // add material to resulting meshes
-        object.traverse((child) => {
+        object.traverse(child => {
           child.material = resMaterial;
         });
 
-        this.scene.traverse((child) => {
-          this.scene.remove(child);
+        this.viewer.Scene.traverse(child => {
+          if (child.isMesh) {
+            this.viewer.Scene.remove(child);
+          }
         });
 
-        this.scene.add(object);
+        this.viewer.Scene.add(object);
 
         // hide spinner
         this.showSpinner(false);
@@ -236,12 +194,12 @@ export default {
       if (item.type === "System.String") {
         // hack for draco meshes
         try {
-          return this.$rhino.DracoCompression.decompressBase64String(data);
+          return window.Rhino3dm.DracoCompression.decompressBase64String(data);
         } catch {
           alert("error decompressing data");
         } // ignore errors (maybe the string was just a string...)
       } else if (typeof data === "object") {
-        return this.$rhino.CommonObject.decode(data);
+        return window.Rhino3dm.CommonObject.decode(data);
       }
       return null;
     },
@@ -255,8 +213,8 @@ export default {
       if (enable) {
         this.loaded = false;
       } else this.loaded = true;
-    },
-  },
+    }
+  }
 };
 </script>
 
