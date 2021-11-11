@@ -1,6 +1,23 @@
 <template>
-  <div class="viewer">
+  <div class="container" id="viewer">
+    <loader :loaded="loaded"></loader>
     <h1>This is the viewer page</h1>
+    <div
+      v-for="(parameter, index) in parameters"
+      :key="index"
+      class="param px-6"
+    >
+      <b-field :label="parameter.name">
+        <b-slider
+          :min="parameter.min"
+          :max="parameter.max"
+          :step="parameter.step"
+          v-model="parameter.value"
+          lazy
+          ticks
+        ></b-slider>
+      </b-field>
+    </div>
     <div ref="canvas"></div>
   </div>
 </template>
@@ -9,16 +26,17 @@
 import ThreeViewer from "@/classes/ThreeViewer.js";
 import RhinoService from "@/modules/RhinoService.js";
 import GrasshopperParameter from "@/modules/GrasshopperParameter.js";
+import Loader from "@/components/Loader.vue";
 
 export default {
   name: "Viewer",
   data() {
     return {
+      loaded: false,
       rhinoService: null,
       viewer: null,
       definition: null,
       trees: [],
-      loaded: 0,
       parameters: [
         {
           name: "Typology",
@@ -32,22 +50,8 @@ export default {
       ]
     };
   },
-  watch: {
-    isParametric: function (newP) {
-      if (newP == true) {
-        this.switchTitle = "Rhino";
-      } else if (newP == false) {
-        this.switchTitle = "Grasshopper";
-      }
-    },
-    loaded: function (newLoad, oldLoad) {
-      if (newLoad > oldLoad) {
-        console.log("watching definition change");
-        // this.computeParamsTree();
-        // this.rhinoCompute(newDef);
-      }
-    }
-  },
+  components: { Loader },
+  watch: {},
   beforeMount() {
     this.initRhinoServices();
   },
@@ -69,14 +73,12 @@ export default {
       this.viewer.init();
     },
     async loadGrasshopperModel() {
-      this.loaded++;
-      // console.log("loading grasshopper model");
       var definition = await this.rhinoService.loadGrasshopperFileLocally(
         "/grasshopper/Truss.gh"
       );
       this.computeParametersTrees(definition);
     },
-    computeParametersTrees() {
+    computeParametersTrees(definition) {
       console.log("computing params");
       for (let i = 0; i < this.parameters.length; i++) {
         const tempParam = this.parameters[i];
@@ -89,26 +91,17 @@ export default {
         console.log("param", param);
         this.trees.push(param);
       }
-      // var grasshopperParameterB = new GrasshopperParameter("Typology", 0);
-      // var paramB = grasshopperParameterB.GetParameter();
-
-      // var grasshopperParameterC = new GrasshopperParameter(
-      //   "Subdivision Count",
-      //   10
-      // );
-      // var paramC = grasshopperParameterC.GetParameter();
-      // this.trees.push(paramB);
-      // this.trees.push(paramC);
-
-      // this.rhinoCompute(definition);
+      this.rhinoCompute(definition);
     },
-    // eslint-disable-next-line
     async rhinoCompute(definition) {
       const res = await this.rhinoService.computeGrasshopperDefinition(
         definition,
         this.trees
       );
       console.log(res);
+      var results = this.rhinoService.collectResults(res);
+      4;
+      console.log(results.objects);
     }
   }
 };
