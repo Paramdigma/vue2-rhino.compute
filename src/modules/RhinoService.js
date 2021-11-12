@@ -35,7 +35,7 @@ RhinoService.prototype.computeGrasshopperDefinition = async function (
     definition,
     trees
   );
-  console.log("computed grasshopper response", res);
+  // console.log("computed grasshopper response", res);
   return res;
 };
 
@@ -79,5 +79,6 @@ RhinoService.prototype.collectResults = function (jsonResponse) {
       }
     }
   }
+  // console.log(doc);
   return doc;
 };
