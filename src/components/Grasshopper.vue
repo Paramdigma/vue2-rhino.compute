@@ -83,7 +83,7 @@ export default {
   beforeMount() {
     this.rhinoService = new RhinoService();
     this.rhinoService.init();
-    console.log(window.RhinoCompute, window.Rhino3dm);
+    // console.log(window.RhinoCompute, window.Rhino3dm);
   },
   async mounted() {
     if (this.$refs.canvas) {
@@ -102,7 +102,7 @@ export default {
     },
 
     async compute() {
-      console.log("in compute");
+      // console.log("in compute");
 
       const param1 = new window.RhinoCompute.Grasshopper.DataTree("Length");
       param1.append([0], [this.truss_width.value]);
@@ -127,7 +127,7 @@ export default {
         trees
       );
 
-      console.log("grasshopper res:", res);
+      // console.log("grasshopper res:", res);
       this.collectResults(res);
     },
 

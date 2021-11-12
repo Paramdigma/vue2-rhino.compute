@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { Rhino3dmLoader } from "three/examples/jsm/loaders/3DMLoader.js";
 
 export default class ThreeViewer {
   Canvas = null;
@@ -59,6 +60,13 @@ export default class ThreeViewer {
       animate();
     }
   }
+  rhino3dmLoader() {
+    // set up loader for converting the results to threejs
+    const loader = new Rhino3dmLoader();
+    loader.setLibraryPath("https://cdn.jsdelivr.net/npm/rhino3dm@0.15.0-beta/");
+    return loader;
+  }
+
   addMeshToScene(mesh) {
     let threemesh = meshToThreejs(
       mesh,

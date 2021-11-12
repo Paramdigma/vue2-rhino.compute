@@ -1,13 +1,13 @@
 <template>
   <div class="about">
-    <grasshopper></grasshopper>
+    <!-- <grasshopper></grasshopper> -->
   </div>
 </template>
 <script>
-import Grasshopper from "@/components/Grasshopper.vue";
+// import Grasshopper from "@/components/Grasshopper.vue";
 export default {
-  name: "About",
-  components: { Grasshopper },
+  name: "About"
+  // components: { Grasshopper },
 };
 </script>
 
