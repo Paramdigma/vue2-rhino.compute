@@ -8,7 +8,7 @@ RhinoService.prototype.init = function async() {
       window.RhinoCompute.apiKey = process.env.VUE_APP_RHINO_COMPUTE_API_KEY;
       window.RhinoCompute.authToken = process.env.VUE_APP_RHINO_COMPUTE_API_KEY;
 
-      window.rhino3dm().then(rh => {
+      window.rhino3dm().then((rh) => {
         window.Rhino3dm = rh;
         resolve();
       });

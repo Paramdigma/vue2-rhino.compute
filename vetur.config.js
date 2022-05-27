@@ -5,4 +5,5 @@ module.exports = {
     "vetur.experimental.templateInterpolationService": true,
   },
   // Normal projects use the default configuration default: `[{ root: './' }]`
+  devtool: "source-map",
 };

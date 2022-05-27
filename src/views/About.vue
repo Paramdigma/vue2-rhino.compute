@@ -6,7 +6,7 @@
 <script>
 // import Grasshopper from "@/components/Grasshopper.vue";
 export default {
-  name: "About"
+  name: "About",
   // components: { Grasshopper },
 };
 </script>
