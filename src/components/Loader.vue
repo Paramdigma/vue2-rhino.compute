@@ -5,11 +5,10 @@
 <script>
 export default {
   name: "Loader",
-  props:["loaded"],
+  props: ["loaded"],
   data() {
-    return {
-    };
-  }
+    return {};
+  },
 };
 </script>
 

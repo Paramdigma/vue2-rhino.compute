@@ -63,20 +63,20 @@ export default {
         value: 0,
         min: 0,
         max: 3,
-        step: 1
+        step: 1,
       },
       truss_width: {
         value: 8.0,
         min: 5.0,
         max: 20.0,
-        step: 0.1
+        step: 0.1,
       },
       count_slider: {
         value: 5,
         min: 1,
         max: 100,
-        step: 1
-      }
+        step: 1,
+      },
     };
   },
   components: { Loader },
@@ -167,18 +167,18 @@ export default {
 
       const resMaterial = new this.viewer.THREE.MeshBasicMaterial({
         vertexColors: true,
-        wireframe: true
+        wireframe: true,
       });
 
       // load rhino doc into three.js scene
       const buffer = new Uint8Array(this.doc.toByteArray()).buffer;
-      loader.parse(buffer, object => {
+      loader.parse(buffer, (object) => {
         // add material to resulting meshes
-        object.traverse(child => {
+        object.traverse((child) => {
           child.material = resMaterial;
         });
 
-        this.viewer.Scene.traverse(child => {
+        this.viewer.Scene.traverse((child) => {
           if (child.isMesh) {
             this.viewer.Scene.remove(child);
           }
@@ -215,8 +215,8 @@ export default {
       if (enable) {
         this.loaded = false;
       } else this.loaded = true;
-    }
-  }
+    },
+  },
 };
 </script>
 

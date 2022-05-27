@@ -46,12 +46,12 @@ export default {
           value: 15,
           min: 2,
           max: 30,
-          step: 0.1
+          step: 0.1,
         },
         { name: "Typology", value: 2, min: 0, max: 3, step: 1 },
-        { name: "Subdivision Count", value: 5, min: 1, max: 20, step: 1 }
+        { name: "Subdivision Count", value: 5, min: 1, max: 20, step: 1 },
       ],
-      url: "/grasshopper/Truss.gh"
+      url: "/grasshopper/Truss.gh",
     };
   },
   components: { Loader },
@@ -113,13 +113,13 @@ export default {
       // load rhino doc into three.js scene
       const buffer = new Uint8Array(doc.toByteArray()).buffer;
       console.log(buffer);
-      this.rhino3dmLoader.parse(buffer, object => {
+      this.rhino3dmLoader.parse(buffer, (object) => {
         // add material to resulting meshes
-        object.traverse(child => {
+        object.traverse((child) => {
           child.material = resMaterial;
         });
 
-        this.viewer.Scene.traverse(child => {
+        this.viewer.Scene.traverse((child) => {
           this.viewer.Scene.remove(child);
         });
 
@@ -138,8 +138,8 @@ export default {
     paramChanged() {
       this.activateSpinner(true);
       this.computeParametersTrees();
-    }
-  }
+    },
+  },
 };
 </script>
 
