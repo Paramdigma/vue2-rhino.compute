@@ -17,11 +17,11 @@ import Grasshopper from "@/components/Grasshopper.vue";
 export default {
   name: "Viewer",
   data() {
-    return { isParametric: false, switchTitle: "Grasshopper" };
+    return { isParametric: true, switchTitle: "Grasshopper" };
   },
   components: {
     Rhino,
-    Grasshopper
+    Grasshopper,
   },
   watch: {
     isParametric: function (newP) {
@@ -30,7 +30,7 @@ export default {
       } else if (newP == false) {
         this.switchTitle = "Grasshopper";
       }
-    }
+    },
   },
   beforeMount() {
     this.$RhinoCompute.url = "http://localhost:8081/";
@@ -41,8 +41,8 @@ export default {
     changeViewer() {
       this.isParametric = !this.isParametric;
       console.clear();
-    }
-  }
+    },
+  },
 };
 </script>
 

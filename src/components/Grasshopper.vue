@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div>
+    <div class="is-flex is-flex-direction-row">
       <input
         @input="onInputChanged"
         type="range"
@@ -11,7 +11,7 @@
         :step="count_slider.step"
         v-model="count_slider.value"
       />
-      <label for="count">Count</label>
+      <label for="count">Count: {{ count_slider.value }}</label>
     </div>
     <div>
       <input
@@ -24,7 +24,7 @@
         v-model="radius_slider.value"
         :step="radius_slider.step"
       />
-      <label for="radius">Radius</label>
+      <label for="radius">Radius: {{ radius_slider.value }}</label>
     </div>
     <div>
       <input
@@ -37,14 +37,16 @@
         v-model="length_slider.value"
         :step="length_slider.step"
       />
-      <label for="length">Length</label>
+      <label for="length">Length: {{ length_slider.value }}</label>
     </div>
     <div ref="canvas"></div>
   </div>
 </template>
 
 <script>
-// import { Rhino3dmLoader } from "three/examples/jsm/loaders/3DMLoader.js";
+/* eslint-disable */
+import { Rhino3dmLoader } from "three/examples/jsm/loaders/3DMLoader.js";
+
 export default {
   name: "Grasshopper",
   data() {
@@ -54,23 +56,30 @@ export default {
       renderer: {},
       controls: {},
       definition: null,
-      doc: undefined,
+      doc: null,
+      applicationDetails: "Rhino.Compute vuejs boilerplate",
+      applicationName: "Vue2-Rhino.Compute",
+      applicationUrl: "http://localhost:8080",
+      createdBy: "Paramdigma",
+      lastEditedBy: "Christian Dimitri",
+      revision: 1,
+      startSectionComments: "",
       radius_slider: {
-        value: 3.0,
+        value: 0.5,
         min: 0,
-        max: 10.0,
+        max: 1.0,
         step: 0.1
       },
       length_slider: {
-        value: 8.0,
+        value: 40,
         min: 0,
-        max: 10.0,
+        max: 40,
         step: 0.1
       },
       count_slider: {
-        value: 65,
+        value: 1,
         min: 1,
-        max: 100,
+        max: 10,
         step: 1
       }
     };
@@ -126,24 +135,24 @@ export default {
       this.animate();
     },
 
-    meshToThreejs(mesh, material) {
-      let loader = new this.$THREE.BufferGeometryLoader();
-      var geometry = loader.parse(mesh.toThreejsJSON());
-      return new this.$THREE.Mesh(geometry, material);
-    },
-
     async loadGhFile() {
-      const definitionName = "grasshopper/BranchNodeRnd.gh";
+      // const definitionName = "grasshopper/BranchNodeRnd.gh";
+      const definitionName = "grasshopper/ExampleB.gh";
       let url = definitionName;
       let res = await fetch(url);
-      console.log("res:0", res);
+      // console.log("fetched results", res);
       let buffer = await res.arrayBuffer();
+      // console.log("buffer: ", buffer);
       this.definition = new Uint8Array(buffer);
-      console.log("buffer: ", buffer, "definition: ", this.definition);
+      // console.log("definition: ", this.definition);
+    },
+
+    async onInputChanged() {
+      await this.compute();
     },
 
     async compute() {
-      console.log("in compute");
+      // console.log("in compute");
       const param1 = new this.$RhinoCompute.Grasshopper.DataTree("Length");
       param1.append([0], [this.length_slider.value]);
 
@@ -159,33 +168,121 @@ export default {
       trees.push(param2);
       trees.push(param3);
 
-      const res = await this.$RhinoCompute.Grasshopper.evaluateDefinition(
+      const response = await this.$RhinoCompute.Grasshopper.evaluateDefinition(
         this.definition,
         trees
       );
 
-      console.log(res);
+      // console.log("results:", response);
+      this.parseRhino3dmObjects(response);
 
       // hide spinner
 
-      const data = JSON.parse(res.values[0].InnerTree["{0}"][0].data);
-      console.log("data json parsed:", data);
-      const mesh = this.$rhino.DracoCompression.decompressBase64String(data);
-      console.log("decompressd mesh:", mesh);
+      // let mesh = this.parseCompressMesh(res);
+      //
+      // this.addMeshToThreejs(mesh);
+    },
+    parseRhino3dmObjects(response) {
 
+      this.doc = new this.$rhino.File3dm();
+
+      const values = response.values;
+
+      // clear doc
+      if (this.doc !== undefined)
+        this.doc.delete();
+
+      //console.log(values)
+      this.doc = new this.$rhino.File3dm();
+      // console.log("doc", this.doc);
+      // for each output (RH_OUT:*)...
+      for (let i = 0; i < values.length; i++) {
+        // ...iterate through data tree structure...
+        for (const path in values[i].InnerTree) {
+          const branch = values[i].InnerTree[path];
+          // ...and for each branch...
+          for (let j = 0; j < branch.length; j++) {
+            // ...load rhino geometry into doc
+            // console.log("geometry object", branch[j]);
+            const rhinoObject = this.decodeItem(branch[j]);
+            // console.log("decoded object", rhinoObject);
+            if (rhinoObject !== null) {
+              this.doc.objects().add(rhinoObject, null);
+            }
+          }
+        }
+      }
+      const loader = new Rhino3dmLoader();
+      loader.setLibraryPath(
+        "https://cdn.jsdelivr.net/npm/rhino3dm@0.15.0-beta/"
+      );
+      let arr = new Uint8Array(this.doc.toByteArray()).buffer;
+      // console.log("array buffer", arr);
+      // console.log("scene", this.scene);
+      let scene = this.scene;
+      let meshNormalMaterial = new this.$THREE.MeshNormalMaterial();
+      let lineMaterial = new this.$THREE.LineBasicMaterial({
+        color: 0x00ff00,
+        linewidth: 1,
+        linecap: "round", //ignored by WebGLRenderer
+        linejoin: "round" //ignored by WebGLRenderer
+      });
+      loader.parse(arr, function(object) {
+        console.log("object parsed", object);
+        // console.log("scene", scene);
+        scene.traverse(child => {
+          scene.remove(child);
+        });
+        object.traverse(child => {
+          if (child.type == "Mesh") {
+            console.log("is Mesh");
+            child.material = meshNormalMaterial;
+          } else if (child.type == "Line") {
+            console.log("is Line");
+            child.material = lineMaterial;
+          }
+        });
+        scene.add(object);
+      });
+    },
+    /**
+     * Attempt to decode data tree item to rhino geometry
+     */
+    decodeItem(item) {
+      const data = JSON.parse(item.data);
+      // console.log("parsed json", data);
+      if (item.type === "System.String") {
+        // hack for draco meshes
+        try {
+          const mesh = this.$rhino.DracoCompression.decompressBase64String(data);
+          return mesh;
+        } catch {
+        } // ignore errors (maybe the string was just a string...)
+      } else if (typeof data === "object") {
+        // console.log("it's object");
+        return this.$rhino.CommonObject.decode(data);
+      } else {
+
+      }
+      return null;
+    },
+    addMeshToThreejs(mesh) {
       const material = new this.$THREE.MeshNormalMaterial();
       const threeMesh = this.meshToThreejs(mesh, material);
 
       // // clear the scene
-      this.scene.traverse(child => {
+      this.scene.traverse((child) => {
         if (child.isMesh) {
           this.scene.remove(child);
         }
       });
       this.scene.add(threeMesh);
     },
-    async onInputChanged() {
-      await this.compute();
+
+    meshToThreejs(mesh, material) {
+      let loader = new this.$THREE.BufferGeometryLoader();
+      var geometry = loader.parse(mesh.toThreejsJSON());
+      return new this.$THREE.Mesh(geometry, material);
     }
   }
 };
