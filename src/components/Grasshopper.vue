@@ -98,7 +98,9 @@ export default {
       this.$THREE.Object3D.DefaultUp = new this.$THREE.Vector3(0, 0, 1);
 
       this.scene = new this.$THREE.Scene();
-      this.scene.background = new this.$THREE.Color(1, 1, 1);
+      this.scene.background = new this.$THREE.Color(0xa0a0a0);
+      this.scene.fog = new this.$THREE.Fog(0xa0a0a0, 100, 500);
+
       this.camera = new this.$THREE.PerspectiveCamera(
         45,
         window.innerWidth / window.innerHeight,
@@ -106,19 +108,49 @@ export default {
         1000
       );
 
-      this.camera.position.y = 50;
+      // camera position
+      this.camera.position.x = 100;
+      this.camera.position.y = 100;
+      this.camera.position.z = 100;
 
       this.renderer = new this.$THREE.WebGLRenderer({ antialias: true });
       this.renderer.setPixelRatio(window.devicePixelRatio);
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(this.renderer.domElement);
+
       // add some controls to orbit the camera
-      const controls = new this.$OrbitControls(
+      this.controls = new this.$OrbitControls(
         this.camera,
         this.renderer.domElement
       );
-      this.controls = controls;
+
       window.addEventListener("resize", this.onWindowResize, false);
+
+      // hemilight
+      const hemiLight = new this.$THREE.HemisphereLight(0xffffff, 0x444444);
+      hemiLight.position.set(1000, 1000,  1000);
+      this.scene.add(hemiLight);
+
+      // directional light
+      const dirLight = new this.$THREE.DirectionalLight(0xffffff);
+      dirLight.position.set(1200, 1200, 1200);
+      dirLight.castShadow = true;
+      this.scene.add(dirLight);
+
+      // ground
+      const mesh = new this.$THREE.Mesh(new this.$THREE.PlaneGeometry(1000, 1000), new this.$THREE.MeshPhongMaterial({
+        color: 0x999999,
+        depthWrite: false
+      }));
+      mesh.rotation.z = -Math.PI / 2;
+      mesh.receiveShadow = true;
+      this.scene.add(mesh);
+
+      //
+      // // grid helper
+      const gridHelper = new this.$THREE.GridHelper(400, 40, 0x0000ff, 0x808080);
+      gridHelper.rotation.x = -Math.PI / 2;
+      this.scene.add(gridHelper);
 
       this.animate();
     },
@@ -162,7 +194,7 @@ export default {
       // const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
       // param3.append([0], [this.count_slider.value]);
 
-      const point = [1, 1, 1];
+      const point = [1, 1, 0];
       const tempPt = new this.$rhino.Point(point);
       const pts = new this.$rhino.Point3dList();
       console.log(tempPt);
@@ -230,12 +262,15 @@ export default {
         linecap: "round", //ignored by WebGLRenderer
         linejoin: "round" //ignored by WebGLRenderer
       });
+
+      // parse object
       loader.parse(arr, function(object) {
         console.log("object parsed", object);
         // console.log("scene", scene);
-        scene.traverse(child => {
-          scene.remove(child);
-        });
+        // scene.traverse(child => {
+        //   scene.remove(child);
+        // });
+        // change material
         object.traverse(child => {
           if (child.type == "Mesh") {
             console.log("is Mesh");
