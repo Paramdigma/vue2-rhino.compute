@@ -128,7 +128,7 @@ export default {
 
       // hemilight
       const hemiLight = new this.$THREE.HemisphereLight(0xffffff, 0x444444);
-      hemiLight.position.set(1000, 1000,  1000);
+      hemiLight.position.set(1000, 1000, 1000);
       this.scene.add(hemiLight);
 
       // directional light
@@ -138,15 +138,14 @@ export default {
       this.scene.add(dirLight);
 
       // ground
-      const mesh = new this.$THREE.Mesh(new this.$THREE.PlaneGeometry(1000, 1000), new this.$THREE.MeshPhongMaterial({
-        color: 0x999999,
-        depthWrite: false
-      }));
-      mesh.rotation.z = -Math.PI / 2;
-      mesh.receiveShadow = true;
-      this.scene.add(mesh);
+      // const mesh = new this.$THREE.Mesh(new this.$THREE.PlaneGeometry(1000, 1000), new this.$THREE.MeshPhongMaterial({
+      //   color: 0x999999,
+      //   depthWrite: false
+      // }));
+      // mesh.rotation.z = -Math.PI / 2;
+      // mesh.receiveShadow = true;
+      // this.scene.add(mesh);
 
-      //
       // // grid helper
       const gridHelper = new this.$THREE.GridHelper(400, 40, 0x0000ff, 0x808080);
       gridHelper.rotation.x = -Math.PI / 2;
@@ -169,8 +168,7 @@ export default {
 
     async loadGhFile() {
       // const definitionName = "grasshopper/BranchNodeRnd.gh";
-      const definitionName = "grasshopper/ExampleC.gh";
-      let url = definitionName;
+      const url = "grasshopper/ExampleC.gh";
       let res = await fetch(url);
       // console.log("fetched results", res);
       let buffer = await res.arrayBuffer();
@@ -202,7 +200,8 @@ export default {
       const param4 = new this.$RhinoCompute.Grasshopper.DataTree("Points");
       param4.append([0], [ptData]);
       console.log(param4);
-      // clear values
+
+      // store params
       const trees = [];
       trees.push(param1);
       trees.push(param2);
@@ -254,6 +253,7 @@ export default {
       let arr = new Uint8Array(this.doc.toByteArray()).buffer;
       // console.log("array buffer", arr);
       // console.log("scene", this.scene);
+
       let scene = this.scene;
       let meshNormalMaterial = new this.$THREE.MeshNormalMaterial();
       let lineMaterial = new this.$THREE.LineBasicMaterial({
@@ -266,10 +266,11 @@ export default {
       // parse object
       loader.parse(arr, function(object) {
         console.log("object parsed", object);
-        // console.log("scene", scene);
-        // scene.traverse(child => {
-        //   scene.remove(child);
-        // });
+        console.log("scene", scene);
+        scene.traverse(child => {
+          if (child.type == "Object3D" || child.type == "Mesh" || child.type == "Curve")
+            scene.remove(child);
+        });
         // change material
         object.traverse(child => {
           if (child.type == "Mesh") {
