@@ -6,7 +6,6 @@
     </button>
     <rhino v-if="!isParametric"></rhino>
     <grasshopper v-else></grasshopper>
-    <canvas ref="canvas"></canvas>
   </div>
 </template>
 
@@ -46,4 +45,5 @@ export default {
 };
 </script>
 
-<style></style>
+<style lang="scss">
+</style>
