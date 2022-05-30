@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="background-color: #E6E6E6">
     <!--    <div class="is-flex is-flex-direction-row">-->
     <!--      <input-->
     <!--        @input="onInputChanged"-->
@@ -67,6 +67,7 @@ export default {
       pointOnScreen: null,
       selectedPoint: null,
       points: [],
+      plane: null,
       dblClicked: false,
       radius_slider: {
         value: 2.0,
@@ -114,8 +115,8 @@ export default {
       this.$THREE.Object3D.DefaultUp = new this.$THREE.Vector3(0, 0, 1);
 
       this.scene = new this.$THREE.Scene();
-      this.scene.background = new this.$THREE.Color(0xa0a0a0);
-      this.scene.fog = new this.$THREE.Fog(0xa0a0a0, 100, 500);
+      this.scene.background = new this.$THREE.Color(0xE6E6E6);
+      this.scene.fog = new this.$THREE.Fog(0xa0a0a0, 1000, 3000);
 
       this.camera = new this.$THREE.PerspectiveCamera(
         45,
@@ -159,6 +160,12 @@ export default {
       gridHelper.rotation.x = -Math.PI / 2;
       this.scene.add(gridHelper);
 
+      const geometry = new this.$THREE.PlaneGeometry(400, 400);
+      geometry.rotateZ(-Math.PI / 2);
+      this.plane = new this.$THREE.Mesh(geometry, new this.$THREE.MeshBasicMaterial({ visible: true }));
+      this.plane.name = "Plane";
+      this.scene.add(this.plane);
+
       // events
       document.addEventListener("pointermove", this.onPointerMove);
 
@@ -177,9 +184,6 @@ export default {
       this.pointOnScreen = this.worldPointFromScreenPoint(viewportDown, this.camera);
 
     },
-    constructPoint() {
-      return new this.$rhino.Point(this.pointOnScreen.x, this.pointOnScreen.y, this.pointOnScreen.z);
-    },
     worldPointFromScreenPoint(screenPoint, camera) {
 
       let worldPoint = new this.$THREE.Vector3();
@@ -190,29 +194,6 @@ export default {
       return worldPoint;
     },
 
-    animate() {
-      requestAnimationFrame(this.animate);
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
-    },
-
-    onWindowResize() {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      this.animate();
-    },
-
-    async loadGhFile() {
-      // const definitionName = "grasshopper/BranchNodeRnd.gh";
-      const url = "grasshopper/ExampleC.gh";
-      let res = await fetch(url);
-      // console.log("fetched results", res);
-      let buffer = await res.arrayBuffer();
-      // console.log("buffer: ", buffer);
-      this.definition = new Uint8Array(buffer);
-      // console.log("definition: ", this.definition);
-    },
 
     async compute() {
       // console.log("in compute");
@@ -307,7 +288,7 @@ export default {
         console.log("object parsed", object);
         console.log("scene", scene);
         scene.traverse(child => {
-          if (child.type == "Object3D" || child.type == "Mesh" || child.type == "Curve")
+          if (child.type == "Object3D" || (child.type == "Mesh" && child.name != "Plane") || child.type == "Curve")
             scene.remove(child);
         });
         // change material
@@ -343,6 +324,29 @@ export default {
       return null;
     },
 
+    animate() {
+      requestAnimationFrame(this.animate);
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+    },
+
+    onWindowResize() {
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.animate();
+    },
+
+    async loadGhFile() {
+      // const definitionName = "grasshopper/BranchNodeRnd.gh";
+      const url = "grasshopper/ExampleC.gh";
+      let res = await fetch(url);
+      // console.log("fetched results", res);
+      let buffer = await res.arrayBuffer();
+      // console.log("buffer: ", buffer);
+      this.definition = new Uint8Array(buffer);
+      // console.log("definition: ", this.definition);
+    },
     async onInputChanged() {
       await this.compute();
     }
