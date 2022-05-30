@@ -1,6 +1,5 @@
 <template>
   <div class="viewer">
-    <h1>This is the viewer page</h1>
     <button @click="changeViewer">
       {{ switchTitle }}
     </button>
@@ -20,16 +19,16 @@ export default {
   },
   components: {
     Rhino,
-    Grasshopper,
+    Grasshopper
   },
   watch: {
-    isParametric: function (newP) {
+    isParametric: function(newP) {
       if (newP == true) {
         this.switchTitle = "Rhino";
       } else if (newP == false) {
         this.switchTitle = "Grasshopper";
       }
-    },
+    }
   },
   beforeMount() {
     this.$RhinoCompute.url = "http://localhost:8081/";
@@ -40,8 +39,8 @@ export default {
     changeViewer() {
       this.isParametric = !this.isParametric;
       console.clear();
-    },
-  },
+    }
+  }
 };
 </script>
 
