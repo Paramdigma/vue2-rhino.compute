@@ -39,7 +39,7 @@
       />
       <label for="length">Length: {{ length_slider.value }}</label>
     </div>
-    <div ref="canvas"></div>
+    <div class="canvas" ref="canvas"></div>
   </div>
 </template>
 
@@ -64,6 +64,8 @@ export default {
       lastEditedBy: "Christian Dimitri",
       revision: 1,
       startSectionComments: "",
+      point3d: null,
+      dblClicked: false,
       radius_slider: {
         value: 2.0,
         min: 2.0,
@@ -137,22 +139,50 @@ export default {
       dirLight.castShadow = true;
       this.scene.add(dirLight);
 
-      // ground
-      // const mesh = new this.$THREE.Mesh(new this.$THREE.PlaneGeometry(1000, 1000), new this.$THREE.MeshPhongMaterial({
-      //   color: 0x999999,
-      //   depthWrite: false
-      // }));
-      // mesh.rotation.z = -Math.PI / 2;
-      // mesh.receiveShadow = true;
-      // this.scene.add(mesh);
 
-      // // grid helper
+      // grid helper
       const gridHelper = new this.$THREE.GridHelper(400, 40, 0x0000ff, 0x808080);
       gridHelper.rotation.x = -Math.PI / 2;
       this.scene.add(gridHelper);
 
+      // events
+      document.addEventListener("pointermove", this.onPointerMove);
+      // create point on click event
+      this.renderer.domElement.addEventListener("click", this.doubleClick());
+
+
       this.animate();
     },
+    onPointerMove(event) {
+      // Relative screen position
+      // (WebGL is -1 to 1 left to right, 1 to -1 top to bottom)
+      // console.log(this.$refs.canvas);
+      const rect = document.querySelector("canvas").getBoundingClientRect();
+      let viewportDown = new this.$THREE.Vector2();
+      viewportDown.x = (((event.clientX - rect.left) / rect.width) * 2) - 1;
+      viewportDown.y = -(((event.clientY - rect.top) / rect.height) * 2) + 1;
+
+      // compute 3d point
+      this.point3d = this.worldPointFromScreenPoint(viewportDown, this.camera);
+
+    },
+    doubleClick(){
+      console.log("doubleClick")
+      this.dblClicked = true;
+    },
+    constructPoint() {
+      return new this.$rhino.Point(this.point3d.x, this.point3d.y, this.point3d.z);
+    },
+    worldPointFromScreenPoint(screenPoint, camera) {
+
+      let worldPoint = new this.$THREE.Vector3();
+      worldPoint.x = screenPoint.x;
+      worldPoint.y = screenPoint.y;
+      worldPoint.z = 0;
+      worldPoint.unproject(camera);
+      return worldPoint;
+    },
+
     animate() {
       requestAnimationFrame(this.animate);
       this.controls.update();
@@ -175,10 +205,6 @@ export default {
       // console.log("buffer: ", buffer);
       this.definition = new Uint8Array(buffer);
       // console.log("definition: ", this.definition);
-    },
-
-    async onInputChanged() {
-      await this.compute();
     },
 
     async compute() {
@@ -216,6 +242,7 @@ export default {
       // console.log("results:", response);
       this.parseRhino3dmObjects(response);
     },
+
     parseRhino3dmObjects(response) {
 
       this.doc = new this.$rhino.File3dm();
@@ -303,13 +330,22 @@ export default {
       }
       return null;
     },
-    meshToThreejs(mesh, material) {
-      let loader = new this.$THREE.BufferGeometryLoader();
-      var geometry = loader.parse(mesh.toThreejsJSON());
-      return new this.$THREE.Mesh(geometry, material);
+
+    async onInputChanged() {
+      await this.compute();
     }
+
   }
 };
 </script>
 
-<style></style>
+<style lang="scss">
+.canvas{
+  width: 100vw;
+  height: 70vh !important;
+  canvas{
+    width: 100%;
+    height: 100% !important;
+  }
+}
+</style>
