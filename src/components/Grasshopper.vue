@@ -1,18 +1,18 @@
 <template>
   <div style="background-color: #E6E6E6">
-    <!--    <div class="is-flex is-flex-direction-row">-->
-    <!--      <input-->
-    <!--        @input="onInputChanged"-->
-    <!--        type="range"-->
-    <!--        id="count"-->
-    <!--        name="count"-->
-    <!--        :min="count_slider.min"-->
-    <!--        :max="count_slider.max"-->
-    <!--        :step="count_slider.step"-->
-    <!--        v-model="count_slider.value"-->
-    <!--      />-->
-    <!--      <label for="count">Count: {{ count_slider.value }}</label>-->
-    <!--    </div>-->
+    <div class="is-flex is-flex-direction-row">
+      <input
+        @input="onInputChanged"
+        type="range"
+        id="count"
+        name="count"
+        :min="count_slider.min"
+        :max="count_slider.max"
+        :step="count_slider.step"
+        v-model="count_slider.value"
+      />
+      <label for="count">Count: {{ count_slider.value }}</label>
+    </div>
     <div>
       <input
         @input="onInputChanged"
@@ -82,7 +82,7 @@ export default {
         step: 0.1
       },
       count_slider: {
-        value: 1,
+        value: 5,
         min: 1,
         max: 10,
         step: 1
@@ -99,8 +99,8 @@ export default {
   watch: {
     async dblClicked(click) {
       if (click) {
-        console.log("double clicked");
         this.selectedPoint = this.pointOnScreen;
+        console.log("double clicked", this.selectedPoint);
         this.points.push(this.selectedPoint);
         await this.compute();
         this.dblClicked = false;
@@ -167,7 +167,7 @@ export default {
       this.scene.add(this.plane);
 
       // events
-      document.addEventListener("pointermove", this.onPointerMove);
+      // document.addEventListener("pointermove", this.onPointerMove);
 
       this.animate();
     },
@@ -195,36 +195,60 @@ export default {
     },
 
 
-    async compute() {
+    compute: async function() {
       // console.log("in compute");
       const param1 = new this.$RhinoCompute.Grasshopper.DataTree("Length");
       param1.append([0], [this.length_slider.value]);
-
+      console.log(param1);
       const param2 = new this.$RhinoCompute.Grasshopper.DataTree("Radius");
       param2.append([0], [this.radius_slider.value]);
       console.log(param2);
-      // const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
-      // param3.append([0], [this.count_slider.value]);
+      const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
+      param3.append([0], [this.count_slider.value]);
+      console.log(param3);
 
-
-      const pts = new this.$rhino.Point3dList();
-      const datas = [];
       const param4 = new this.$RhinoCompute.Grasshopper.DataTree("Points");
-      for (let i = 0; i < this.points.length; i++) {
-        const point = [this.points[i] != null ? this.points[i].x : 0, this.points[i] != null ? this.points[i].y : 0, this.points[i] != null ? this.points[i].z : 0];
+      const ptA = [500, 0, 0];
+      const ptB = [100, 0, 0];
+      const ptC = [100, 100, 0];
+      const ptD = [0, 100, 0];
+      const ptE = [200, 200, 200];
+      const ptF = [300, 0, 0];
+      const ptG = [350, 50, 0];
+      const ptH = [400, -50, 0];
+      const ptI = [450, 50, 0];
+      const ptList = [];
+      ptList.push(ptA);
+      ptList.push(ptB);
+      ptList.push(ptC);
+      ptList.push(ptD);
+      ptList.push(ptE);
+      ptList.push(ptF);
+      ptList.push(ptG);
+      ptList.push(ptH);
+      ptList.push(ptI);
+
+      const data = [];
+      console.log("ptList", ptList.length);
+      for (let i = 0; i < ptList.length; i++) {
+        const point = ptList[i];
+        console.log("input point", point);
         const tempPt = new this.$rhino.Point(point);
-        console.log(tempPt);
-        const ptData = JSON.stringify(tempPt.encode());
-        datas.push(ptData);
+        console.log("rhino3dm point", tempPt);
+        const tempData = JSON.stringify(tempPt.encode());
+        console.log("json string", tempData);
+
+        data.push(tempData);
       }
-      param4.append([0], datas);
+      console.log("data", data);
+      param4.append([0], data);
       console.log("param 4", param4);
 
       // store params
       const trees = [];
       trees.push(param1);
       trees.push(param2);
-      // trees.push(param3);
+      trees.push(param3);
       trees.push(param4);
 
       const response = await this.$RhinoCompute.Grasshopper.evaluateDefinition(
@@ -339,7 +363,7 @@ export default {
 
     async loadGhFile() {
       // const definitionName = "grasshopper/BranchNodeRnd.gh";
-      const url = "grasshopper/ExampleC.gh";
+      const url = "grasshopper/ExampleB.gh";
       let res = await fetch(url);
       // console.log("fetched results", res);
       let buffer = await res.arrayBuffer();
