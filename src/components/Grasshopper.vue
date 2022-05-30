@@ -39,7 +39,7 @@
       />
       <label for="length">Length: {{ length_slider.value }}</label>
     </div>
-    <div class="canvas" ref="canvas"></div>
+    <div @dblclick="dblClicked = true" class="canvas" ref="canvas"></div>
   </div>
 </template>
 
@@ -64,7 +64,9 @@ export default {
       lastEditedBy: "Christian Dimitri",
       revision: 1,
       startSectionComments: "",
-      point3d: null,
+      pointOnScreen: null,
+      selectedPoint: null,
+      points: [],
       dblClicked: false,
       radius_slider: {
         value: 2.0,
@@ -91,6 +93,18 @@ export default {
       await this.loadGhFile();
       this.init();
       await this.compute();
+    }
+  },
+  watch: {
+    async dblClicked(click) {
+      if (click) {
+        console.log("double clicked");
+        this.selectedPoint = this.pointOnScreen;
+        this.points.push(this.selectedPoint);
+        await this.compute();
+        this.dblClicked = false;
+        console.log(this.pointOnScreen);
+      }
     }
   },
   methods: {
@@ -147,9 +161,6 @@ export default {
 
       // events
       document.addEventListener("pointermove", this.onPointerMove);
-      // create point on click event
-      this.renderer.domElement.addEventListener("click", this.doubleClick());
-
 
       this.animate();
     },
@@ -163,15 +174,11 @@ export default {
       viewportDown.y = -(((event.clientY - rect.top) / rect.height) * 2) + 1;
 
       // compute 3d point
-      this.point3d = this.worldPointFromScreenPoint(viewportDown, this.camera);
+      this.pointOnScreen = this.worldPointFromScreenPoint(viewportDown, this.camera);
 
     },
-    doubleClick(){
-      console.log("doubleClick")
-      this.dblClicked = true;
-    },
     constructPoint() {
-      return new this.$rhino.Point(this.point3d.x, this.point3d.y, this.point3d.z);
+      return new this.$rhino.Point(this.pointOnScreen.x, this.pointOnScreen.y, this.pointOnScreen.z);
     },
     worldPointFromScreenPoint(screenPoint, camera) {
 
@@ -218,14 +225,19 @@ export default {
       // const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
       // param3.append([0], [this.count_slider.value]);
 
-      const point = [1, 1, 0];
-      const tempPt = new this.$rhino.Point(point);
+
       const pts = new this.$rhino.Point3dList();
-      console.log(tempPt);
-      const ptData = JSON.stringify(tempPt.encode());
+      const datas = [];
       const param4 = new this.$RhinoCompute.Grasshopper.DataTree("Points");
-      param4.append([0], [ptData]);
-      console.log(param4);
+      for (let i = 0; i < this.points.length; i++) {
+        const point = [this.points[i] != null ? this.points[i].x : 0, this.points[i] != null ? this.points[i].y : 0, this.points[i] != null ? this.points[i].z : 0];
+        const tempPt = new this.$rhino.Point(point);
+        console.log(tempPt);
+        const ptData = JSON.stringify(tempPt.encode());
+        datas.push(ptData);
+      }
+      param4.append([0], datas);
+      console.log("param 4", param4);
 
       // store params
       const trees = [];
@@ -340,10 +352,11 @@ export default {
 </script>
 
 <style lang="scss">
-.canvas{
+.canvas {
   width: 100vw;
   height: 70vh !important;
-  canvas{
+
+  canvas {
     width: 100%;
     height: 100% !important;
   }
