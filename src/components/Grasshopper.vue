@@ -1,18 +1,18 @@
 <template>
   <div>
-    <!--    <div class="is-flex is-flex-direction-row">-->
-    <!--      <input-->
-    <!--        @input="onInputChanged"-->
-    <!--        type="range"-->
-    <!--        id="count"-->
-    <!--        name="count"-->
-    <!--        :min="count_slider.min"-->
-    <!--        :max="count_slider.max"-->
-    <!--        :step="count_slider.step"-->
-    <!--        v-model="count_slider.value"-->
-    <!--      />-->
-    <!--      <label for="count">Count: {{ count_slider.value }}</label>-->
-    <!--    </div>-->
+    <div class="is-flex is-flex-direction-row">
+      <input
+        @input="onInputChanged"
+        type="range"
+        id="count"
+        name="count"
+        :min="count_slider.min"
+        :max="count_slider.max"
+        :step="count_slider.step"
+        v-model="count_slider.value"
+      />
+      <label for="count">Count: {{ count_slider.value }}</label>
+    </div>
     <div>
       <input
         @input="onInputChanged"
@@ -205,7 +205,7 @@ export default {
 
     async loadGhFile() {
       // const definitionName = "grasshopper/BranchNodeRnd.gh";
-      const url = "grasshopper/ExampleC.gh";
+      const url = "grasshopper/ExampleB.gh";
       let res = await fetch(url);
       // console.log("fetched results", res);
       let buffer = await res.arrayBuffer();
@@ -222,8 +222,8 @@ export default {
       const param2 = new this.$RhinoCompute.Grasshopper.DataTree("Radius");
       param2.append([0], [this.radius_slider.value]);
       console.log(param2);
-      // const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
-      // param3.append([0], [this.count_slider.value]);
+      const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
+      param3.append([0], [this.count_slider.value]);
 
 
       const pts = new this.$rhino.Point3dList();
@@ -243,7 +243,7 @@ export default {
       const trees = [];
       trees.push(param1);
       trees.push(param2);
-      // trees.push(param3);
+      trees.push(param3);
       trees.push(param4);
 
       const response = await this.$RhinoCompute.Grasshopper.evaluateDefinition(
