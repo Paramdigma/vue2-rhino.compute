@@ -39,7 +39,7 @@
       />
       <label for="length">Length: {{ length_slider.value }}</label>
     </div>
-    <div @dblclick="dblClicked = true" class="canvas" ref="canvas"></div>
+    <div id="canvas" class="canvas" ref="canvas"></div>
   </div>
 </template>
 
@@ -69,6 +69,11 @@ export default {
       points: [],
       plane: null,
       dblClicked: false,
+      raycaster: null,
+      helper: null,
+      intersects: [],
+      pointer: null,
+      objects: [],
       radius_slider: {
         value: 2.0,
         min: 2.0,
@@ -99,24 +104,24 @@ export default {
   watch: {
     async dblClicked(click) {
       if (click) {
-        this.selectedPoint = this.pointOnScreen;
+        this.selectedPoint = this.intersects[0].point;
         console.log("double clicked", this.selectedPoint);
         this.points.push(this.selectedPoint);
-        await this.compute();
         this.dblClicked = false;
         console.log(this.pointOnScreen);
+        await this.compute();
       }
     }
   },
   methods: {
     init() {
-      var container = this.$refs["canvas"];
+      const container = document.getElementById("canvas");
       // Rhino models are z-up, so set this as the default
       this.$THREE.Object3D.DefaultUp = new this.$THREE.Vector3(0, 0, 1);
 
       this.scene = new this.$THREE.Scene();
       this.scene.background = new this.$THREE.Color(0xE6E6E6);
-      this.scene.fog = new this.$THREE.Fog(0xa0a0a0, 1000, 3000);
+      this.scene.fog = new this.$THREE.Fog(0xa0a0a0, 300, 1000);
 
       this.camera = new this.$THREE.PerspectiveCamera(
         45,
@@ -142,7 +147,7 @@ export default {
       );
 
       window.addEventListener("resize", this.onWindowResize, false);
-
+      this.getXYZ();
       // hemilight
       const hemiLight = new this.$THREE.HemisphereLight(0xffffff, 0x444444);
       hemiLight.position.set(1000, 1000, 1000);
@@ -166,83 +171,70 @@ export default {
       this.plane.name = "Plane";
       this.scene.add(this.plane);
 
-      // events
-      // document.addEventListener("pointermove", this.onPointerMove);
+      // ray caster
+      this.raycaster = new this.$THREE.Raycaster();
+      this.pointer = new this.$THREE.Vector2();
+
+      const geometryHelper = new this.$THREE.ConeGeometry(2, 10, 3);
+      // geometryHelper.translate(0, 50, 0);
+      geometryHelper.rotateX(Math.PI / 2);
+      this.helper = new this.$THREE.Mesh(geometryHelper, new this.$THREE.MeshNormalMaterial());
+      this.scene.add(this.helper);
+
+      container.addEventListener("pointermove", this.onPointerMove);
+      // container.addEventListener("dblclick", this.onDblClick);
 
       this.animate();
     },
+    onDblClick() {
+      this.dblClicked = true;
+    },
     onPointerMove(event) {
-      // Relative screen position
-      // (WebGL is -1 to 1 left to right, 1 to -1 top to bottom)
-      // console.log(this.$refs.canvas);
-      const rect = document.querySelector("canvas").getBoundingClientRect();
-      let viewportDown = new this.$THREE.Vector2();
-      viewportDown.x = (((event.clientX - rect.left) / rect.width) * 2) - 1;
-      viewportDown.y = -(((event.clientY - rect.top) / rect.height) * 2) + 1;
 
-      // compute 3d point
-      this.pointOnScreen = this.worldPointFromScreenPoint(viewportDown, this.camera);
+      this.pointer.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
+      this.pointer.y = -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.camera);
 
+      // See if the ray from the camera into the world hits one of our meshes
+      this.intersects = this.raycaster.intersectObject(this.plane, false);
+      // Toggle rotation bool for meshes that we clicked
+      if (this.intersects.length > 0) {
+        //   // console.log("intersects", this.intersects);
+          this.helper.position.set(0, 0, 0);
+        // if (this.intersects.face)
+        this.helper.lookAt(this.intersects[0].face.normal);
+        this.helper.position.copy(this.intersects[0].point);
+      }
     },
-    worldPointFromScreenPoint(screenPoint, camera) {
-
-      let worldPoint = new this.$THREE.Vector3();
-      worldPoint.x = screenPoint.x;
-      worldPoint.y = screenPoint.y;
-      worldPoint.z = 0;
-      worldPoint.unproject(camera);
-      return worldPoint;
-    },
-
 
     compute: async function() {
       // console.log("in compute");
       const param1 = new this.$RhinoCompute.Grasshopper.DataTree("Length");
       param1.append([0], [this.length_slider.value]);
-      console.log(param1);
+      // console.log(param1);
       const param2 = new this.$RhinoCompute.Grasshopper.DataTree("Radius");
       param2.append([0], [this.radius_slider.value]);
-      console.log(param2);
+      // console.log(param2);
       const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
       param3.append([0], [this.count_slider.value]);
-      console.log(param3);
+      // console.log(param3);
 
       const param4 = new this.$RhinoCompute.Grasshopper.DataTree("Points");
-      const ptA = [500, 0, 0];
-      const ptB = [100, 0, 0];
-      const ptC = [100, 100, 0];
-      const ptD = [0, 100, 0];
-      const ptE = [200, 200, 200];
-      const ptF = [300, 0, 0];
-      const ptG = [350, 50, 0];
-      const ptH = [400, -50, 0];
-      const ptI = [450, 50, 0];
-      const ptList = [];
-      ptList.push(ptA);
-      ptList.push(ptB);
-      ptList.push(ptC);
-      ptList.push(ptD);
-      ptList.push(ptE);
-      ptList.push(ptF);
-      ptList.push(ptG);
-      ptList.push(ptH);
-      ptList.push(ptI);
 
       const data = [];
-      console.log("ptList", ptList.length);
-      for (let i = 0; i < ptList.length; i++) {
-        const point = ptList[i];
-        console.log("input point", point);
+      for (let i = 0; i < this.points.length; i++) {
+        const point = [this.points.x, this.points.y, this.points.z];
+        // console.log("input point", point);
         const tempPt = new this.$rhino.Point(point);
-        console.log("rhino3dm point", tempPt);
+        // console.log("rhino3dm point", tempPt);
         const tempData = JSON.stringify(tempPt.encode());
-        console.log("json string", tempData);
+        // console.log("json string", tempData);
 
         data.push(tempData);
       }
-      console.log("data", data);
+      // console.log("data", data);
       param4.append([0], data);
-      console.log("param 4", param4);
+      // console.log("param 4", param4);
 
       // store params
       const trees = [];
@@ -257,7 +249,7 @@ export default {
       );
 
       // console.log("results:", response);
-      this.parseRhino3dmObjects(response);
+      // this.parseRhino3dmObjects(response);
     },
 
     parseRhino3dmObjects(response) {
@@ -308,6 +300,7 @@ export default {
       });
 
       // parse object
+      let objs = [];
       loader.parse(arr, function(object) {
         console.log("object parsed", object);
         console.log("scene", scene);
@@ -317,16 +310,20 @@ export default {
         });
         // change material
         object.traverse(child => {
-          if (child.type == "Mesh") {
-            console.log("is Mesh");
+          if (child.isMesh) {
+            // console.log("is Mesh");
             child.material = meshNormalMaterial;
-          } else if (child.type == "Line") {
-            console.log("is Line");
+            objs.push(child);
+          }
+          if (child.isLine) {
+            // console.log("is Line");
             child.material = lineMaterial;
           }
         });
         scene.add(object);
       });
+      this.objects = objs;
+      this.objects.push(this.plane);
     },
 
     decodeItem(item) {
@@ -373,8 +370,11 @@ export default {
     },
     async onInputChanged() {
       await this.compute();
+    },
+    getXYZ() {
+      const axesHelper = new this.$THREE.AxesHelper(300);
+      this.scene.add(axesHelper);
     }
-
   }
 };
 </script>
