@@ -238,6 +238,7 @@ export default {
       const pts = new this.$rhino.Point3dList();
       const datas = [];
       const param4 = new this.$RhinoCompute.Grasshopper.DataTree("Points");
+
       for (let i = 0; i < this.points.length; i++) {
         const point = [this.points[i] != null ? this.points[i].x : 0, this.points[i] != null ? this.points[i].y : 0, this.points[i] != null ? this.points[i].z : 0];
         const tempPt = new this.$rhino.Point(point);
@@ -321,6 +322,7 @@ export default {
           if (child.type == "Object3D" || child.type == "Mesh" || child.type == "Curve")
             scene.remove(child);
         });
+
         // change material
         object.traverse(child => {
           if (child.type == "Mesh") {
