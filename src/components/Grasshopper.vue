@@ -88,10 +88,17 @@ export default {
       }
     };
   },
+  components: { Loader },
+  beforeMount() {
+    this.rhinoService = new RhinoService();
+    this.rhinoService.init();
+    // console.log(window.RhinoCompute, window.Rhino3dm);
+  },
   async mounted() {
     if (this.$refs.canvas) {
+      this.viewer = new ThreeViewer(this.$refs.canvas);
+      this.viewer.init();
       await this.loadGhFile();
-      this.init();
       await this.compute();
     }
   },
@@ -212,10 +219,12 @@ export default {
       // console.log("buffer: ", buffer);
       this.definition = new Uint8Array(buffer);
       // console.log("definition: ", this.definition);
+
     },
 
     async compute() {
       // console.log("in compute");
+
       const param1 = new this.$RhinoCompute.Grasshopper.DataTree("Length");
       param1.append([0], [this.length_slider.value]);
 
@@ -242,12 +251,14 @@ export default {
 
       // store params
       const trees = [];
+
       trees.push(param1);
       trees.push(param2);
       trees.push(param3);
       trees.push(param4);
 
       const response = await this.$RhinoCompute.Grasshopper.evaluateDefinition(
+
         this.definition,
         trees
       );
