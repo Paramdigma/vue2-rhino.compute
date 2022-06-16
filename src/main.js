@@ -2,11 +2,10 @@ import Vue from "vue";
 import App from "./App.vue";
 import "./registerServiceWorker";
 import router from "./router";
-import Buefy from "buefy";
-import "buefy/dist/buefy.css";
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 Vue.config.productionTip = false;
-Vue.use(Buefy);
 
 window.rhino3dm().then(async (rhino) => {
   Vue.prototype.$RhinoCompute = window.RhinoCompute;
