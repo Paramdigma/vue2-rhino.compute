@@ -1,5 +1,5 @@
 <template>
-  <div style="background-color: #E6E6E6">
+  <div>
     <div class="is-flex is-flex-direction-row">
       <input
         @input="onInputChanged"
@@ -39,7 +39,7 @@
       />
       <label for="length">Length: {{ length_slider.value }}</label>
     </div>
-    <div id="canvas" class="canvas" ref="canvas"></div>
+    <div @dblclick="dblClicked = true" class="canvas" ref="canvas"></div>
   </div>
 </template>
 
@@ -67,13 +67,7 @@ export default {
       pointOnScreen: null,
       selectedPoint: null,
       points: [],
-      plane: null,
       dblClicked: false,
-      raycaster: null,
-      helper: null,
-      intersects: [],
-      pointer: null,
-      objects: [],
       radius_slider: {
         value: 2.0,
         min: 2.0,
@@ -87,7 +81,7 @@ export default {
         step: 0.1
       },
       count_slider: {
-        value: 5,
+        value: 1,
         min: 1,
         max: 10,
         step: 1
@@ -104,24 +98,24 @@ export default {
   watch: {
     async dblClicked(click) {
       if (click) {
-        this.selectedPoint = this.intersects[0].point;
-        console.log("double clicked", this.selectedPoint);
+        console.log("double clicked");
+        this.selectedPoint = this.pointOnScreen;
         this.points.push(this.selectedPoint);
+        await this.compute();
         this.dblClicked = false;
         console.log(this.pointOnScreen);
-        await this.compute();
       }
     }
   },
   methods: {
     init() {
-      const container = document.getElementById("canvas");
+      var container = this.$refs["canvas"];
       // Rhino models are z-up, so set this as the default
       this.$THREE.Object3D.DefaultUp = new this.$THREE.Vector3(0, 0, 1);
 
       this.scene = new this.$THREE.Scene();
-      this.scene.background = new this.$THREE.Color(0xE6E6E6);
-      this.scene.fog = new this.$THREE.Fog(0xa0a0a0, 300, 1000);
+      this.scene.background = new this.$THREE.Color(0xa0a0a0);
+      this.scene.fog = new this.$THREE.Fog(0xa0a0a0, 100, 500);
 
       this.camera = new this.$THREE.PerspectiveCamera(
         45,
@@ -147,7 +141,7 @@ export default {
       );
 
       window.addEventListener("resize", this.onWindowResize, false);
-      this.getXYZ();
+
       // hemilight
       const hemiLight = new this.$THREE.HemisphereLight(0xffffff, 0x444444);
       hemiLight.position.set(1000, 1000, 1000);
@@ -165,76 +159,86 @@ export default {
       gridHelper.rotation.x = -Math.PI / 2;
       this.scene.add(gridHelper);
 
-      const geometry = new this.$THREE.PlaneGeometry(400, 400);
-      geometry.rotateZ(-Math.PI / 2);
-      this.plane = new this.$THREE.Mesh(geometry, new this.$THREE.MeshBasicMaterial({ visible: true }));
-      this.plane.name = "Plane";
-      this.scene.add(this.plane);
-
-      // ray caster
-      this.raycaster = new this.$THREE.Raycaster();
-      this.pointer = new this.$THREE.Vector2();
-
-      const geometryHelper = new this.$THREE.ConeGeometry(2, 10, 3);
-      // geometryHelper.translate(0, 50, 0);
-      geometryHelper.rotateX(Math.PI / 2);
-      this.helper = new this.$THREE.Mesh(geometryHelper, new this.$THREE.MeshNormalMaterial());
-      this.scene.add(this.helper);
-
-      container.addEventListener("pointermove", this.onPointerMove);
-      // container.addEventListener("dblclick", this.onDblClick);
+      // events
+      document.addEventListener("pointermove", this.onPointerMove);
 
       this.animate();
     },
-    onDblClick() {
-      this.dblClicked = true;
-    },
     onPointerMove(event) {
+      // Relative screen position
+      // (WebGL is -1 to 1 left to right, 1 to -1 top to bottom)
+      // console.log(this.$refs.canvas);
+      const rect = document.querySelector("canvas").getBoundingClientRect();
+      let viewportDown = new this.$THREE.Vector2();
+      viewportDown.x = (((event.clientX - rect.left) / rect.width) * 2) - 1;
+      viewportDown.y = -(((event.clientY - rect.top) / rect.height) * 2) + 1;
 
-      this.pointer.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
-      this.pointer.y = -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
-      this.raycaster.setFromCamera(this.pointer, this.camera);
+      // compute 3d point
+      this.pointOnScreen = this.worldPointFromScreenPoint(viewportDown, this.camera);
 
-      // See if the ray from the camera into the world hits one of our meshes
-      this.intersects = this.raycaster.intersectObject(this.plane, false);
-      // Toggle rotation bool for meshes that we clicked
-      if (this.intersects.length > 0) {
-        //   // console.log("intersects", this.intersects);
-          this.helper.position.set(0, 0, 0);
-        // if (this.intersects.face)
-        this.helper.lookAt(this.intersects[0].face.normal);
-        this.helper.position.copy(this.intersects[0].point);
-      }
+    },
+    constructPoint() {
+      return new this.$rhino.Point(this.pointOnScreen.x, this.pointOnScreen.y, this.pointOnScreen.z);
+    },
+    worldPointFromScreenPoint(screenPoint, camera) {
+
+      let worldPoint = new this.$THREE.Vector3();
+      worldPoint.x = screenPoint.x;
+      worldPoint.y = screenPoint.y;
+      worldPoint.z = 0;
+      worldPoint.unproject(camera);
+      return worldPoint;
     },
 
-    compute: async function() {
+    animate() {
+      requestAnimationFrame(this.animate);
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+    },
+
+    onWindowResize() {
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.animate();
+    },
+
+    async loadGhFile() {
+      // const definitionName = "grasshopper/BranchNodeRnd.gh";
+      const url = "grasshopper/ExampleB.gh";
+      let res = await fetch(url);
+      // console.log("fetched results", res);
+      let buffer = await res.arrayBuffer();
+      // console.log("buffer: ", buffer);
+      this.definition = new Uint8Array(buffer);
+      // console.log("definition: ", this.definition);
+    },
+
+    async compute() {
       // console.log("in compute");
       const param1 = new this.$RhinoCompute.Grasshopper.DataTree("Length");
       param1.append([0], [this.length_slider.value]);
-      // console.log(param1);
+
       const param2 = new this.$RhinoCompute.Grasshopper.DataTree("Radius");
       param2.append([0], [this.radius_slider.value]);
-      // console.log(param2);
+      console.log(param2);
       const param3 = new this.$RhinoCompute.Grasshopper.DataTree("Count");
       param3.append([0], [this.count_slider.value]);
-      // console.log(param3);
 
+
+      const pts = new this.$rhino.Point3dList();
+      const datas = [];
       const param4 = new this.$RhinoCompute.Grasshopper.DataTree("Points");
 
-      const data = [];
       for (let i = 0; i < this.points.length; i++) {
-        const point = [this.points.x, this.points.y, this.points.z];
-        // console.log("input point", point);
+        const point = [this.points[i] != null ? this.points[i].x : 0, this.points[i] != null ? this.points[i].y : 0, this.points[i] != null ? this.points[i].z : 0];
         const tempPt = new this.$rhino.Point(point);
-        // console.log("rhino3dm point", tempPt);
-        const tempData = JSON.stringify(tempPt.encode());
-        // console.log("json string", tempData);
-
-        data.push(tempData);
+        console.log(tempPt);
+        const ptData = JSON.stringify(tempPt.encode());
+        datas.push(ptData);
       }
-      // console.log("data", data);
-      param4.append([0], data);
-      // console.log("param 4", param4);
+      param4.append([0], datas);
+      console.log("param 4", param4);
 
       // store params
       const trees = [];
@@ -249,7 +253,7 @@ export default {
       );
 
       // console.log("results:", response);
-      // this.parseRhino3dmObjects(response);
+      this.parseRhino3dmObjects(response);
     },
 
     parseRhino3dmObjects(response) {
@@ -300,30 +304,26 @@ export default {
       });
 
       // parse object
-      let objs = [];
       loader.parse(arr, function(object) {
         console.log("object parsed", object);
         console.log("scene", scene);
         scene.traverse(child => {
-          if (child.type == "Object3D" || (child.type == "Mesh" && child.name != "Plane") || child.type == "Curve")
+          if (child.type == "Object3D" || child.type == "Mesh" || child.type == "Curve")
             scene.remove(child);
         });
+
         // change material
         object.traverse(child => {
-          if (child.isMesh) {
-            // console.log("is Mesh");
+          if (child.type == "Mesh") {
+            console.log("is Mesh");
             child.material = meshNormalMaterial;
-            objs.push(child);
-          }
-          if (child.isLine) {
-            // console.log("is Line");
+          } else if (child.type == "Line") {
+            console.log("is Line");
             child.material = lineMaterial;
           }
         });
         scene.add(object);
       });
-      this.objects = objs;
-      this.objects.push(this.plane);
     },
 
     decodeItem(item) {
@@ -345,36 +345,10 @@ export default {
       return null;
     },
 
-    animate() {
-      requestAnimationFrame(this.animate);
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
-    },
-
-    onWindowResize() {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      this.animate();
-    },
-
-    async loadGhFile() {
-      // const definitionName = "grasshopper/BranchNodeRnd.gh";
-      const url = "grasshopper/ExampleB.gh";
-      let res = await fetch(url);
-      // console.log("fetched results", res);
-      let buffer = await res.arrayBuffer();
-      // console.log("buffer: ", buffer);
-      this.definition = new Uint8Array(buffer);
-      // console.log("definition: ", this.definition);
-    },
     async onInputChanged() {
       await this.compute();
-    },
-    getXYZ() {
-      const axesHelper = new this.$THREE.AxesHelper(300);
-      this.scene.add(axesHelper);
     }
+
   }
 };
 </script>
