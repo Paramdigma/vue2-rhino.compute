@@ -1,17 +1,21 @@
 <template>
-  <div class="viewer">
+  <div class="container" id="viewer">
+    <loader :loaded="loaded"></loader>
     <h1>This is the viewer page</h1>
     <button @click="changeViewer">
       {{ switchTitle }}
     </button>
     <rhino v-if="!isParametric"></rhino>
     <grasshopper v-else></grasshopper>
+
   </div>
 </template>
 
 <script>
-import Rhino from "@/components/Rhino.vue";
-import Grasshopper from "@/components/Grasshopper.vue";
+import ThreeViewer from "@/classes/ThreeViewer.js";
+import RhinoService from "@/modules/RhinoService.js";
+import GrasshopperParameter from "@/modules/GrasshopperParameter.js";
+import Loader from "@/components/Loader.vue";
 
 export default {
   name: "Viewer",
@@ -30,11 +34,7 @@ export default {
         this.switchTitle = "Grasshopper";
       }
     },
-  },
-  beforeMount() {
-    this.$RhinoCompute.url = "http://localhost:8081/";
-    this.$RhinoCompute.authToken = this.$RhinoCompute.getAuthToken();
-    this.$RhinoCompute.apiKey = this.$RhinoCompute.getAuthToken();
+
   },
   methods: {
     changeViewer() {
